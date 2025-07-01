@@ -3,33 +3,59 @@ import pandas as pd
 import numpy as np
 import plotly.graph_objects as go
 
-st.title("Линия на Ei/Ed ≈ 2 без интерполация")
+st.title("Изолинии за всички стойности на Ei/Ed (без интерполация)")
 
-df = pd.read_csv('danni.csv')
+# Зареждане на данни
+df = pd.read_csv("danni.csv")
 
-# Филтрираме точки близо до 2 (толеранс +-0.05)
-tol = 0.05
-df_2 = df[(df['Ei/Ed'] >= 2 - tol) & (df['Ei/Ed'] <= 2 + tol)]
+# Проверяваме колоните
+st.write("Колони:", df.columns.tolist())
 
-# Сортираме по H/D (или y) за свързване с линия
-df_2 = df_2.sort_values(by=['H/D', 'y'])
+# Получаваме всички уникални стойности на Ei/Ed
+unique_levels = sorted(df['Ei/Ed'].unique())
 
+# Създаваме фигура
 fig = go.Figure()
 
-fig.add_trace(go.Scatter(
-    x=df_2['H/D'],
-    y=df_2['y'],
-    mode='lines+markers',  # линии + точки
-    line=dict(color='red', width=2),
-    marker=dict(size=6, color='red'),
-    name='Ei/Ed ≈ 2'
-))
+# За всяка стойност на Ei/Ed:
+for level in unique_levels:
+    df_level = df[df['Ei/Ed'] == level]
 
+    # Създаваме pivot таблица: редове = y, колони = H/D
+    pivot = df_level.pivot_table(index='y', columns='H/D', values='Ei/Ed')
+
+    # Проверка дали имаме пълна мрежа (иначе прескачаме)
+    if pivot.shape[0] < 2 or pivot.shape[1] < 2:
+        continue
+
+    x = pivot.columns.values       # H/D
+    y = pivot.index.values         # y
+    z = pivot.values               # матрица със стойности (всички равни на level)
+
+    # Добавяме контур само за конкретното ниво
+    fig.add_trace(go.Contour(
+        z=z,
+        x=x,
+        y=y,
+        showscale=False,  # без цветна скала
+        contours=dict(
+            coloring='lines',
+            showlabels=True,
+            start=level,
+            end=level,
+            size=1
+        ),
+        line=dict(width=2),
+        name=f'Ei/Ed = {level}'
+    ))
+
+# Оформление
 fig.update_layout(
     xaxis_title='H/D',
     yaxis_title='y',
-    title='Свързана линия на точки с Ei/Ed около 2',
-    showlegend=True
+    title='Изолинии на Ei/Ed (само реални точки)',
+    legend=dict(x=0.7, y=0.95),
+    xaxis=dict(dtick=0.1)
 )
 
 st.plotly_chart(fig)
