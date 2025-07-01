@@ -2,12 +2,12 @@ import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
 
-st.title("Изолинии с реално съотношение 1:1")
+st.title("Изолинии с фиксиран диапазон и реален мащаб 1:1")
 
 # Зареждане на данни
 df = pd.read_csv("danni.csv")
 
-# Показване на данни
+# Показваме примерни данни
 st.write("Примерни данни:", df.head())
 
 unique_levels = sorted(df['Ei/Ed'].unique())
@@ -27,14 +27,16 @@ for level in unique_levels:
 fig.update_layout(
     xaxis=dict(
         title='H/D',
+        range=[0, 2],
         dtick=0.1
     ),
     yaxis=dict(
         title='y',
+        range=[0, 2.7],
         dtick=0.1,
-        scaleanchor='x'  # Скалата по y е свързана с тази по x
+        scaleanchor='x'
     ),
-    title='Изолинии с реален мащаб 1:1',
+    title='Изолинии с фиксиран диапазон и мащаб 1:1',
     legend=dict(title='Легенда')
 )
 
