@@ -1,60 +1,39 @@
 import streamlit as st
 import pandas as pd
-import numpy as np
 import plotly.graph_objects as go
 
-st.title("Изолинии за всички стойности на Ei/Ed (без интерполация)")
+st.title("Изолинии по зададени точки (без интерполация)")
 
-# Зареждане на данни
+# Зареждане на CSV
 df = pd.read_csv("danni.csv")
 
-# Проверяваме колоните
-st.write("Колони:", df.columns.tolist())
+# Показваме част от данните за преглед
+st.write("Примерни данни:", df.head())
 
-# Получаваме всички уникални стойности на Ei/Ed
+# Извличаме уникалните стойности на Ei/Ed
 unique_levels = sorted(df['Ei/Ed'].unique())
 
-# Създаваме фигура
+# Създаваме графиката
 fig = go.Figure()
 
-# За всяка стойност на Ei/Ed:
+# За всяка изолиния (всяка стойност на Ei/Ed)
 for level in unique_levels:
-    df_level = df[df['Ei/Ed'] == level]
+    df_level = df[df['Ei/Ed'] == level].sort_values(by='H/D')  # или by='y' според структурата
 
-    # Създаваме pivot таблица: редове = y, колони = H/D
-    pivot = df_level.pivot_table(index='y', columns='H/D', values='Ei/Ed')
-
-    # Проверка дали имаме пълна мрежа (иначе прескачаме)
-    if pivot.shape[0] < 2 or pivot.shape[1] < 2:
-        continue
-
-    x = pivot.columns.values       # H/D
-    y = pivot.index.values         # y
-    z = pivot.values               # матрица със стойности (всички равни на level)
-
-    # Добавяме контур само за конкретното ниво
-    fig.add_trace(go.Contour(
-        z=z,
-        x=x,
-        y=y,
-        showscale=False,  # без цветна скала
-        contours=dict(
-            coloring='lines',
-            showlabels=True,
-            start=level,
-            end=level,
-            size=1
-        ),
-        line=dict(width=2),
-        name=f'Ei/Ed = {level}'
+    fig.add_trace(go.Scatter(
+        x=df_level['H/D'],
+        y=df_level['y'],
+        mode='lines',
+        name=f'Ei/Ed = {level}',
+        line=dict(width=2)
     ))
 
 # Оформление
 fig.update_layout(
     xaxis_title='H/D',
     yaxis_title='y',
-    title='Изолинии на Ei/Ed (само реални точки)',
-    legend=dict(x=0.7, y=0.95),
+    title='Изолинии на Ei/Ed (по подадени точки)',
+    legend=dict(title='Легенда'),
     xaxis=dict(dtick=0.1)
 )
 
