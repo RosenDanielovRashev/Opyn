@@ -27,12 +27,14 @@ for level in unique_levels:
 fig.update_layout(
     xaxis=dict(
         title='H/D',
-        dtick=0.1
+        dtick=0.1,
+        range=[0, 2],  # фиксиран обхват по x
     ),
     yaxis=dict(
         title='y',
         dtick=0.1,
-        scaleanchor='x'  # Скалата по y е свързана с тази по x
+        scaleanchor='x',  # запазва реално съотношение 1:1
+        range=[0, 2.7],  # фиксиран обхват по y
     ),
     title='Изолинии с реален мащаб 1:1',
     legend=dict(title='Легенда')
