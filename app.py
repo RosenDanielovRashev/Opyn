@@ -2,42 +2,29 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import plotly.graph_objects as go
-from scipy.interpolate import griddata
 
-st.title("Изолиния Ei/Ed = 2 (H/D по x, y по y) с интерполация")
+st.title("Точки с Ei/Ed близко до 2 (без интерполация)")
 
 df = pd.read_csv('danni.csv')
 
-h_d_unique = np.linspace(df['H/D'].min(), df['H/D'].max(), 100)
-y_unique = np.linspace(df['y'].min(), df['y'].max(), 100)
+# Филтрираме точки, където Ei/Ed е близо до 2 (+- 0.05 примерно)
+tol = 0.05
+df_2 = df[(df['Ei/Ed'] >= 2 - tol) & (df['Ei/Ed'] <= 2 + tol)]
 
-grid_h, grid_y = np.meshgrid(h_d_unique, y_unique)
+fig = go.Figure()
 
-points = df[['H/D', 'y']].values
-values = df['Ei/Ed'].values
-
-grid_z = griddata(points, values, (grid_h, grid_y), method='cubic')
-
-fig = go.Figure(data=go.Contour(
-    z=grid_z,
-    x=h_d_unique,
-    y=y_unique,
-    contours=dict(
-        coloring='lines',
-        showlabels=True,
-        start=2,
-        end=2,
-        size=1
-    ),
-    line=dict(width=3, color='red')
+fig.add_trace(go.Scatter(
+    x=df_2['H/D'],
+    y=df_2['y'],
+    mode='markers',
+    marker=dict(color='red', size=6),
+    name='Ei/Ed ≈ 2'
 ))
 
 fig.update_layout(
     xaxis_title='H/D',
     yaxis_title='y',
-    xaxis=dict(
-        dtick=0.1  # деления през 0.1 по x
-    )
+    title='Точки с Ei/Ed около 2'
 )
 
 st.plotly_chart(fig)
