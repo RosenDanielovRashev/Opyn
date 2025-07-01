@@ -33,7 +33,6 @@ fig.update_layout(
     yaxis=dict(
         title='y',
         dtick=0.1,
-        scaleanchor='x',  # запазва реално съотношение 80:80
         range=[0, 2.7],  # фиксиран обхват по y
     ),
     title='Изолинии с реален мащаб 1:1',
