@@ -4,14 +4,11 @@ import numpy as np
 import plotly.graph_objects as go
 from scipy.interpolate import griddata
 
-st.title("Изолиния Ei/Ed = 2 (H/D по x с гъстота 0.1, y по y) с интерполация")
+st.title("Изолиния Ei/Ed = 2 (H/D по x, y по y) с интерполация")
 
 df = pd.read_csv('danni.csv')
 
-# Гъстота по H/D с крачка 0.1
-h_d_unique = np.arange(df['H/D'].min(), df['H/D'].max() + 0.1, 0.1)
-
-# 100 точки по y
+h_d_unique = np.linspace(df['H/D'].min(), df['H/D'].max(), 100)
 y_unique = np.linspace(df['y'].min(), df['y'].max(), 100)
 
 grid_h, grid_y = np.meshgrid(h_d_unique, y_unique)
@@ -38,6 +35,9 @@ fig = go.Figure(data=go.Contour(
 fig.update_layout(
     xaxis_title='H/D',
     yaxis_title='y',
+    xaxis=dict(
+        dtick=0.1  # деления през 0.1 по x
+    )
 )
 
 st.plotly_chart(fig)
