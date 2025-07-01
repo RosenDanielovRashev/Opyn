@@ -1,4 +1,4 @@
-import streamlit as st
+import streamlit as st 
 import pandas as pd
 import plotly.graph_objects as go
 
@@ -25,18 +25,23 @@ for level in unique_levels:
     ))
 
 fig.update_layout(
+    width=700,   # Ширина на графиката в пиксели
+    height=700,  # Височина на графиката в пиксели (за 1:1 квадрат)
     xaxis=dict(
         title='H/D',
         dtick=0.1,
-        range=[0, 2],  # фиксиран обхват по x
+        range=[0, 2],
+        constrain='domain',  # опционално, за да се ограничи разтягането
     ),
     yaxis=dict(
         title='y',
         dtick=0.1,
-        range=[0, 2.7],  # фиксиран обхват по y
+        range=[0, 2.7],
+        scaleanchor='x',  # Скалата по y е привързана към x -> реален мащаб 1:1
+        scaleratio=1      # гарантира съотношение 1:1 (понякога излишно, но няма да навреди)
     ),
     title='Изолинии с реален мащаб 1:1',
     legend=dict(title='Легенда')
 )
 
-st.plotly_chart(fig)
+st.plotly_chart(fig, use_container_width=False)  # с False, за да не се мащабира според контейнера
