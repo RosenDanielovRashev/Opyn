@@ -4,28 +4,28 @@ import numpy as np
 import plotly.graph_objects as go
 from scipy.interpolate import griddata
 
-st.title("Изолиния Ei/Ed = 2 с интерполация")
+st.title("Изолиния Ei/Ed = 2 (H/D по x, y по y) с интерполация")
 
-# Зареждане на CSV файла
+# Зареждаме данните
 df = pd.read_csv('danni.csv')
 
-# Създаваме гъста мрежа за интерполация
-y_unique = np.linspace(df['y'].min(), df['y'].max(), 100)
+# Създаваме гъста мрежа: H/D по x, y по y
 h_d_unique = np.linspace(df['H/D'].min(), df['H/D'].max(), 100)
-grid_y, grid_h = np.meshgrid(y_unique, h_d_unique)
+y_unique = np.linspace(df['y'].min(), df['y'].max(), 100)
+grid_h, grid_y = np.meshgrid(h_d_unique, y_unique)
 
-# Вземаме реалните точки и стойности
-points = df[['y', 'H/D']].values
+# Подготвяме точки и стойности, като сменяме реда: (H/D, y)
+points = df[['H/D', 'y']].values
 values = df['Ei/Ed'].values
 
-# Интерполираме стойностите върху мрежата
-grid_z = griddata(points, values, (grid_y, grid_h), method='cubic')
+# Интерполираме върху мрежата
+grid_z = griddata(points, values, (grid_h, grid_y), method='cubic')
 
-# Създаваме контурна графика с ЕДИН контур за стойност 2
+# Рисуваме само контурна линия за Ei/Ed = 2
 fig = go.Figure(data=go.Contour(
     z=grid_z,
-    x=y_unique,
-    y=h_d_unique,
+    x=h_d_unique,
+    y=y_unique,
     contours=dict(
         coloring='lines',
         showlabels=True,
@@ -37,8 +37,8 @@ fig = go.Figure(data=go.Contour(
 ))
 
 fig.update_layout(
-    xaxis_title='y',
-    yaxis_title='H/D',
+    xaxis_title='H/D',
+    yaxis_title='y',
 )
 
 st.plotly_chart(fig)
