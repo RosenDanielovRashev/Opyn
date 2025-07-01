@@ -2,6 +2,15 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 
+@st.cache_data
+def load_data():
+    url_ei_ed = "https://raw.githubusercontent.com/<username>/<repo>/main/ei_ed_data.csv"
+    url_esr_ei = "https://raw.githubusercontent.com/<username>/<repo>/main/esr_ei_data.csv"
+
+    df_ei_ed = pd.read_csv(url_ei_ed, encoding='utf-8')
+    df_esr_ei = pd.read_csv(url_esr_ei, encoding='utf-8')
+    return df_ei_ed, df_esr_ei
+
 # Заглавие и легенда
 st.title("Оразмеряване на опън в междинен пласт")
 st.markdown("""
@@ -12,15 +21,6 @@ st.markdown("""
 - Ed: модул на еластичност на подосновата [MPa]  
 - Ei: модул на еластичност на междинния пласт [MPa]
 """)
-
-# Зареждане на CSV от GitHub
-@st.cache_data
-def load_data():
-    url_ei_ed = "https://raw.githubusercontent.com/<потребител>/<репо>/main/data/ei_ed_data.csv"
-    url_esr_ei = "https://raw.githubusercontent.com/<потребител>/<репо>/main/data/esr_ei_data.csv"
-    df_ei_ed = pd.read_csv(url_ei_ed)
-    df_esr_ei = pd.read_csv(url_esr_ei)
-    return df_ei_ed, df_esr_ei
 
 df_ei_ed, df_esr_ei = load_data()
 
@@ -59,7 +59,7 @@ if all(v > 0 for v in h_list) and all(v > 0 for v in E_list):
         st.write(f"Ei/Ed = {EiEd:.3f}")
         st.write(f"Esr/Ei = {EsrEi:.3f}")
 
-        # Визуализация
+        # Визуализация на точката
         fig = px.scatter()
         fig.add_scatter(x=df_ei_ed['H/D'], y=df_ei_ed['σR'],
                         mode='markers', name='Ei/Ed точки', marker=dict(color='blue'))
