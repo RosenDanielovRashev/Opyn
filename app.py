@@ -34,7 +34,7 @@ fig.update_layout(
     yaxis_title='y',
     title='Изолинии на Ei/Ed (по подадени точки)',
     legend=dict(title='Легенда'),
-    xaxis=dict(dtick=0.1)
+    xaxis=dict(dtick=0.01)
 )
 
 st.plotly_chart(fig)
