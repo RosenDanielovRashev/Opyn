@@ -2,23 +2,21 @@ import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
 
-st.title("Изолинии по зададени точки (без интерполация)")
+st.title("Изолинии по подадени точки с контрол на мащаба по осите")
 
 # Зареждане на CSV
 df = pd.read_csv("danni.csv")
 
-# Показваме част от данните за преглед
+# Показване на примерни данни
 st.write("Примерни данни:", df.head())
 
-# Извличаме уникалните стойности на Ei/Ed
+# Вземаме уникалните стойности на Ei/Ed
 unique_levels = sorted(df['Ei/Ed'].unique())
 
-# Създаваме графиката
 fig = go.Figure()
 
-# За всяка изолиния (всяка стойност на Ei/Ed)
 for level in unique_levels:
-    df_level = df[df['Ei/Ed'] == level].sort_values(by='H/D')  # или by='y' според структурата
+    df_level = df[df['Ei/Ed'] == level].sort_values(by='H/D')
 
     fig.add_trace(go.Scatter(
         x=df_level['H/D'],
@@ -28,13 +26,17 @@ for level in unique_levels:
         line=dict(width=2)
     ))
 
-# Оформление
 fig.update_layout(
-    xaxis_title='H/D',
-    yaxis_title='y',
-    title='Изолинии на Ei/Ed (по подадени точки)',
-    legend=dict(title='Легенда'),
-    xaxis=dict(dtick=0.1)
+    xaxis=dict(
+        title='H/D',
+        dtick=0.1  # мащаб по x
+    ),
+    yaxis=dict(
+        title='y',
+        dtick=0.1  # мащаб по y
+    ),
+    title='Изолинии на Ei/Ed с фиксиран мащаб по осите',
+    legend=dict(title='Легенда')
 )
 
 st.plotly_chart(fig)
