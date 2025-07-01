@@ -36,7 +36,7 @@ fig.update_layout(
     yaxis=dict(
         title='y',
         dtick=0.1,
-        range=[0, 2.7],
+        range=[0, 2.5],
         scaleanchor='x',  # Скалата по y е привързана към x -> реален мащаб 1:1
         scaleratio=1      # гарантира съотношение 1:1 (понякога излишно, но няма да навреди)
     ),
