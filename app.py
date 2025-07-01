@@ -6,7 +6,7 @@ import plotly.graph_objects as go
 st.title("Изолинии на Ei/Ed по y и H/D")
 
 # Зареждане на CSV (слагай правилния път)
-df = pd.read_csv('your_file.csv')
+df = pd.read_csv('danni.csv')
 
 # Проверка на размерите
 st.write(f"Брой редове: {len(df)}")
