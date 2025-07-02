@@ -25,7 +25,7 @@ if 'Ei/Ed' in df_original.columns:
             mode='lines',
             name=f'Ei/Ed = {level}',
             line=dict(width=2)
-        )
+        )  # <-- Здесь была пропущена закрывающая скобка
 
 # 2. Добавяне на новите изолинии за sr_Ei
 if 'sr_Ei' in df_new.columns:
