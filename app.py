@@ -11,7 +11,6 @@ def to_subscript(number):
 
 # Входни параметри
 n = st.number_input("Брой пластове (n)", min_value=2, step=1, value=3)
-
 D = st.selectbox("Избери D", options=[34.0, 32.04], index=0)
 
 # Въвеждане на h_i и E_i за всеки пласт
@@ -60,7 +59,6 @@ ratio = H_n / D if D != 0 else 0
 st.latex(r"\frac{H_n}{D} = \frac{" + f"{H_n:.3f}" + "}{" + f"{D:.3f}" + "} = " + f"{ratio:.3f}" )
 
 Ed = st.number_input("Ed", value=1000.0, step=0.1)
-
 En = E_values[-1]
 
 st.markdown("### Изчисления с последен пласт")
@@ -80,6 +78,7 @@ df_new.rename(columns={'Esr/Ei': 'sr_Ei'}, inplace=True)
 
 fig = go.Figure()
 
+# Добавяне на изолинии от първия файл (Ei/Ed)
 if 'Ei/Ed' in df_original.columns:
     unique_Ei_Ed = sorted(df_original['Ei/Ed'].unique())
     for level in unique_Ei_Ed:
@@ -92,6 +91,7 @@ if 'Ei/Ed' in df_original.columns:
             line=dict(width=2)
         ))
 
+# Добавяне на изолинии от втория файл (Esr/Ei)
 if 'sr_Ei' in df_new.columns:
     unique_sr_Ei = sorted(df_new['sr_Ei'].unique())
     for sr_Ei in unique_sr_Ei:
@@ -104,7 +104,7 @@ if 'sr_Ei' in df_new.columns:
             line=dict(width=2)
         ))
 
-# Търсене къде попада Esr_over_En (това е Esr/Ei за интерполация)
+# --- Интерполация на точката в df_new за Esr_over_En и Hn/D ---
 target_sr_Ei = Esr_over_En
 target_Hn_D = ratio  # Hn/D
 
@@ -123,41 +123,30 @@ if lower_index is not None:
     df_lower = df_new[df_new['sr_Ei'] == lower_sr].sort_values(by='H/D')
     df_upper = df_new[df_new['sr_Ei'] == upper_sr].sort_values(by='H/D')
 
-    def interp_xy_perpendicular(df, x0):
+    def interp_xy(df, x0):
         x_arr = df['H/D'].values
         y_arr = df['y'].values
         for j in range(len(x_arr)-1):
             if x_arr[j] <= x0 <= x_arr[j+1]:
-                p1 = np.array([x_arr[j], y_arr[j]])
-                p2 = np.array([x_arr[j+1], y_arr[j+1]])
-                seg_vec = p2 - p1
-                seg_len = np.linalg.norm(seg_vec)
-                if seg_len == 0:
-                    return p1
-                t = (x0 - x_arr[j]) / (x_arr[j+1] - x_arr[j])
-                point_on_seg = p1 + t * seg_vec
-                return point_on_seg
+                x1, x2 = x_arr[j], x_arr[j+1]
+                y1, y2 = y_arr[j], y_arr[j+1]
+                t = (x0 - x1) / (x2 - x1)
+                y_interp = y1 + t * (y2 - y1)
+                return y_interp
+        # Ако x0 извън диапазона, връщаме най-близката стойност
         if x0 < x_arr[0]:
-            return np.array([x_arr[0], y_arr[0]])
+            return y_arr[0]
         else:
-            return np.array([x_arr[-1], y_arr[-1]])
+            return y_arr[-1]
 
-    point_lower = interp_xy_perpendicular(df_lower, target_Hn_D)
-    point_upper = interp_xy_perpendicular(df_upper, target_Hn_D)
+    y_lower = interp_xy(df_lower, target_Hn_D)
+    y_upper = interp_xy(df_upper, target_Hn_D)
 
-    vec = point_upper - point_lower
+    # Интерполация по sr_Ei
+    t_sr = (target_sr_Ei - lower_sr) / (upper_sr - lower_sr)
+    y_interp = y_lower + t_sr * (y_upper - y_lower)
 
-    t = (target_sr_Ei - lower_sr) / (upper_sr - lower_sr)
-
-    interp_point = point_lower + t * vec
-
-    perp_vec = np.array([-vec[1], vec[0]])
-    perp_vec = perp_vec / np.linalg.norm(perp_vec)
-
-    # Дължина за перпендикулярната линия (но тя се маха, няма да добавим тази линия)
-    # line_length = np.linalg.norm(vec) * 1.5
-    # line_start = interp_point - perp_vec * line_length/2
-    # line_end = interp_point + perp_vec * line_length/2
+    interp_point = np.array([target_Hn_D, y_interp])
 
     # Добавяне на интерполирана точка
     fig.add_trace(go.Scatter(
@@ -168,45 +157,51 @@ if lower_index is not None:
         name='Интерполирана точка'
     ))
 
-    # Добавяне на линия от интерполираната точка вертикално до абсцисата (x-оста)
-    fig.add_trace(go.Scatter(
-        x=[interp_point[0], interp_point[0]],
-        y=[interp_point[1], 0],
-        mode='lines',
-        line=dict(color='blue', dash='dash'),
-        name='Линия към абсцисата'
-    ))
-
-    # Намиране на най-близкото Ei/Ed за хоризонтална линия
-    # Тук вземаме най-близкото ниво от df_original, за да чертаем хоризонталната линия
+    # --- Търсим точка в df_original за избран Ei/Ed, където y = 0 (линейна интерполация) ---
+    # Избираме най-близкото Ei/Ed
     closest_Ei_Ed = min(unique_Ei_Ed, key=lambda x: abs(x - En_over_Ed))
+    df_orig_level = df_original[df_original['Ei/Ed'] == closest_Ei_Ed].sort_values(by='H/D')
 
-    df_closest = df_original[df_original['Ei/Ed'] == closest_Ei_Ed].sort_values(by='H/D')
+    # Функция за линейна интерполация за намиране на x при y=0
+    def find_x_at_y_zero(df):
+        x_arr = df['H/D'].values
+        y_arr = df['y'].values
+        for k in range(len(y_arr)-1):
+            if (y_arr[k] >= 0 >= y_arr[k+1]) or (y_arr[k] <= 0 <= y_arr[k+1]):
+                # Линейна интерполация за x при y=0
+                x1, x2 = x_arr[k], x_arr[k+1]
+                y1, y2 = y_arr[k], y_arr[k+1]
+                t = (0 - y1) / (y2 - y1)
+                x_zero = x1 + t * (x2 - x1)
+                return x_zero
+        # Ако няма пресичане с y=0 връщаме None
+        return None
 
-    # Интерполация y стойност в df_closest за x = interp_point[0] (H/D)
-    x_arr_closest = df_closest['H/D'].values
-    y_arr_closest = df_closest['y'].values
+    x_at_y_zero = find_x_at_y_zero(df_orig_level)
 
-    def interp_y_at_x(x_arr, y_arr, x0):
-        for j in range(len(x_arr) - 1):
-            if x_arr[j] <= x0 <= x_arr[j + 1]:
-                y0 = y_arr[j] + (y_arr[j + 1] - y_arr[j]) * (x0 - x_arr[j]) / (x_arr[j + 1] - x_arr[j])
-                return y0
-        if x0 < x_arr[0]:
-            return y_arr[0]
-        else:
-            return y_arr[-1]
+    if x_at_y_zero is not None:
+        # Втора точка на абсцисата
+        zero_point = np.array([x_at_y_zero, 0])
 
-    y_on_closest_curve = interp_y_at_x(x_arr_closest, y_arr_closest, interp_point[0])
+        # Добавяне на вертикална линия от interp_point до zero_point
+        fig.add_trace(go.Scatter(
+            x=[interp_point[0], zero_point[0]],
+            y=[interp_point[1], zero_point[1]],
+            mode='lines',
+            line=dict(color='blue', dash='dash'),
+            name='Линия между интерполираната точка и абсцисата'
+        ))
 
-    # Добавяне на хоризонтална линия от интерполираната точка до кривата от df_original
-    fig.add_trace(go.Scatter(
-        x=[interp_point[0], interp_point[0] + (y_on_closest_curve - interp_point[1])],  # преместване по x с дължината на хор. линия
-        y=[interp_point[1], interp_point[1]],
-        mode='lines',
-        line=dict(color='green', dash='dashdot'),
-        name=f'Хоризонтална линия до Ei/Ed={closest_Ei_Ed}'
-    ))
+        # Маркираме и втората точка
+        fig.add_trace(go.Scatter(
+            x=[zero_point[0]],
+            y=[zero_point[1]],
+            mode='markers',
+            marker=dict(color='green', size=10),
+            name=f'Точка на y=0 за Ei/Ed={closest_Ei_Ed:.3f}'
+        ))
+    else:
+        st.warning(f"Не е намерено пресичане с y=0 за Ei/Ed={closest_Ei_Ed:.3f} в df_original.")
 else:
     st.warning("Стойността Esr/Ei е извън диапазона на изолиниите за интерполация.")
 
@@ -216,7 +211,7 @@ fig.update_layout(
     legend_title="Изолинии",
     width=900,
     height=600,
-    title='Комбинирани изолинии с точка за текущи параметри'
+    template="plotly_white"
 )
 
 st.plotly_chart(fig, use_container_width=True)
