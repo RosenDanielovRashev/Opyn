@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
 import numpy as np
+import os
 
 st.title("Комбинирани изолинии с изчисление на Esr и Hₙ/D")
 
@@ -12,7 +13,7 @@ def to_subscript(number):
 # Входни параметри
 n = st.number_input("Брой пластове (n)", min_value=2, step=1, value=3)
 
-# Падащо меню за D с описателни етикети
+# Падащо меню за D със стойности и етикети
 D_options = {
     "D = 34.0 (тип A)": 34.0,
     "D = 32.04 (тип B)": 32.04
@@ -62,7 +63,7 @@ st.latex(rf"Esr = \frac{{{numerator}}}{{{denominator}}} = \frac{{{weighted_sum_n
 
 # Съотношение Hn / D
 ratio = H_n / D if D != 0 else 0
-st.latex(r"\frac{H_n}{D} = \frac{" + f"{H_n:.3f}" + "}{" + f"{D:.3f}" + "} = " + f"{ratio:.3f}" )
+st.latex(r"\frac{H_n}{D} = \frac{" + f"{H_n:.3f}" + "}{" + f"{D:.3f}" + "} = " + f"{ratio:.3f}")
 
 # Въвеждане на Ed
 Ed = st.number_input("Ed", value=1000.0, step=0.1)
@@ -74,18 +75,18 @@ st.markdown("### Изчисления с последен пласт")
 st.latex(r"E_{" + str(n) + r"} = " + f"{En:.3f}")
 
 Esr_over_En = Esr / En if En != 0 else 0
-st.latex(r"\frac{Esr}{E_{" + str(n) + r"}} = \frac{" + f"{Esr:.3f}" + "}{" + f"{En:.3f}" + "} = " + f"{Esr_over_En:.3f}")
+st.latex(r"\frac{Esr}{E_{" + str(n) + r"}} = \frac{" + f"{Esr:.3f}" + "}{" + f"{En:.3f}" + "} = {Esr_over_En:.3f}")
 
 En_over_Ed = En / Ed if Ed != 0 else 0
-st.latex(r"\frac{E_{" + str(n) + r"}}{E_d} = \frac{" + f"{En:.3f}" + "}{" + f"{Ed:.3f}" + "} = " + f"{En_over_Ed:.3f}")
+st.latex(r"\frac{E_{" + str(n) + r"}}{E_d} = \frac{" + f"{En:.3f}" + "}{" + f"{Ed:.3f}" + "} = {En_over_Ed:.3f}")
 
 # Зареждане на CSV файловете
-try:
+if os.path.exists("danni.csv") and os.path.exists("Оразмеряване на опън за междиннен плстH_D.csv"):
     df_original = pd.read_csv("danni.csv")
     df_new = pd.read_csv("Оразмеряване на опън за междиннен плстH_D.csv")
     df_new.rename(columns={'Esr/Ei': 'sr_Ei'}, inplace=True)
-except FileNotFoundError:
-    st.error("Един или повече CSV файлове не са намерени.")
+else:
+    st.error("Липсващ един или повече CSV файлове. Уверете се, че 'danni.csv' и 'Оразмеряване на опън за междиннен плстH_D.csv' са в директорията.")
     st.stop()
 
 # Изчертаване на графиката
@@ -115,7 +116,18 @@ if 'sr_Ei' in df_new.columns:
             line=dict(width=2)
         ))
 
-# Добавяне на прозрачна линия за втората ос
+# ➕ ДОБАВЯНЕ НА ТОЧКАТА ОТ ВЪВЕДЕНИ ПАРАМЕТРИ
+fig.add_trace(go.Scatter(
+    x=[ratio],
+    y=[Esr_over_En],
+    mode='markers+text',
+    marker=dict(size=12, color='red'),
+    text=["Текуща точка"],
+    textposition="top center",
+    name="Текуща точка (H/D ; Esr/Ei)"
+))
+
+# ➕ Прозрачна линия за втората ос
 fig.add_trace(go.Scatter(
     x=np.linspace(0, 1, 50),
     y=[0.05]*50,
