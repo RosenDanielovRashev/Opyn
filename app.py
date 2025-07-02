@@ -169,16 +169,79 @@ else:
     else:
         interpolated_y = y_lower + (y_upper - y_lower) * (target_sr_Ei - lower_sr) / (upper_sr - lower_sr)
 
-# Добавяне на пунктирана линия между двете изолинии на съответното H/D
+# --- Изчисляване на наклона на изолиниите в точката target_Hn_D ---
+
+def slope(df, x_val):
+    # Използваме finite difference (централен) ако е възможно
+    df_sorted = df.sort_values(by='H/D')
+    x_arr = df_sorted['H/D'].values
+    y_arr = df_sorted['y'].values
+    idx = np.searchsorted(x_arr, x_val)
+
+    if idx == 0:
+        # Напредна разлика
+        dy = y_arr[1] - y_arr[0]
+        dx = x_arr[1] - x_arr[0]
+    elif idx >= len(x_arr):
+        # Назадна разлика
+        dy = y_arr[-1] - y_arr[-2]
+        dx = x_arr[-1] - x_arr[-2]
+    else:
+        # Централен диференциал
+        dy = y_arr[idx] - y_arr[idx-1]
+        dx = x_arr[idx] - x_arr[idx-1]
+
+    return dy / dx if dx != 0 else 0
+
+m_lower = slope(df_lower, target_Hn_D)
+m_upper = slope(df_upper, target_Hn_D)
+
+# Среден наклон на двете изолини
+m_avg = (m_lower + m_upper) / 2
+
+# Перпендикулярен наклон
+if m_avg != 0:
+    m_perp = -1 / m_avg
+else:
+    # Ако средният наклон е 0, перпендикулярната линия е вертикална
+    m_perp = None
+
+# Дължина на интерполационната линия между двете изолини (разстояние между y_lower и y_upper)
+dy_line = y_upper - y_lower
+dx_line = 0  # те имат еднакво x
+
+dist = np.abs(dy_line)
+
+# Ако m_perp е дефиниран, трябва да пресметнем крайни точки на линията с дължина dist, около средната точка (target_Hn_D, средната y)
+x_center = target_Hn_D
+y_center = (y_lower + y_upper) / 2
+
+if m_perp is None:
+    # Линията е вертикална между (x_center, y_lower) и (x_center, y_upper)
+    x_start, y_start = x_center, y_lower
+    x_end, y_end = x_center, y_upper
+else:
+    # Перпендикулярната линия има наклон m_perp, дължина dist
+    # Формула за половината вектор:
+    dx_half = dist / (2 * np.sqrt(1 + m_perp**2))
+    dy_half = m_perp * dx_half
+
+    x_start = x_center - dx_half
+    y_start = y_center - dy_half
+
+    x_end = x_center + dx_half
+    y_end = y_center + dy_half
+
+# Добавяне на перпендикулярната линия (интерполация)
 fig.add_trace(go.Scatter(
-    x=[target_Hn_D, target_Hn_D],
-    y=[y_lower, y_upper],
+    x=[x_start, x_end],
+    y=[y_start, y_end],
     mode='lines',
     line=dict(color='green', width=2, dash='dot'),
-    name='Интерполация между изолинии'
+    name='Интерполация (перпендикулярно)'
 ))
 
-# Добавяне на вертикална линия от точката до абсцисата (x-оста)
+# Добавяне на вертикална линия от точката до x-оста (перпендикулярно на x)
 fig.add_trace(go.Scatter(
     x=[target_Hn_D, target_Hn_D],
     y=[0, interpolated_y],
