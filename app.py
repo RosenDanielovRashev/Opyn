@@ -36,9 +36,19 @@ sum_h_n_1 = h_array[:-1].sum()
 weighted_sum_n_1 = np.sum(E_array[:-1] * h_array[:-1])
 Esr = weighted_sum_n_1 / sum_h_n_1 if sum_h_n_1 != 0 else 0
 
-# Изчисляване на H_n = сумата на всички h_i
+# Изчисляване на H_n и H_{n-1}
 H_n = h_array.sum()
+H_n_1 = sum_h_n_1
 
+# Формула и изчисления за H_{n-1}
+st.latex(r"H_{n-1} = \sum_{i=1}^{n-1} h_i")
+st.write(f"H{to_subscript(n-1)} = {H_n_1:.3f}")
+
+# Формула и изчисления за H_n
+st.latex(r"H_n = \sum_{i=1}^n h_i")
+st.write(f"H{to_subscript(n)} = {H_n:.3f}")
+
+# Формула и изчисления за Esr
 st.latex(r"Esr = \frac{\sum_{i=1}^{n-1} (E_i \cdot h_i)}{\sum_{i=1}^{n-1} h_i}")
 
 numerator = " + ".join([f"{E_values[i]} \cdot {h_values[i]}" for i in range(n-1)])
@@ -46,9 +56,7 @@ denominator = " + ".join([f"{h_values[i]}" for i in range(n-1)])
 formula_with_values = rf"Esr = \frac{{{numerator}}}{{{denominator}}} = \frac{{{weighted_sum_n_1}}}{{{sum_h_n_1}}} = {Esr:.3f}"
 st.latex(formula_with_values)
 
-st.latex(r"H_n = \sum_{i=1}^n h_i")
-st.write(f"Hₙ = {H_n:.3f}")
-
+# Изчисляване на съотношението H_n / D
 ratio = H_n / D if D != 0 else 0
 st.latex(r"\frac{H_n}{D} = \frac{" + f"{H_n:.3f}" + "}{" + f"{D:.3f}" + "} = " + f"{ratio:.3f}" )
 
@@ -71,7 +79,7 @@ st.latex(r"\frac{Esr}{E_{" + str(n) + r"}} = \frac{" + f"{Esr:.3f}" + "}{" + f"{
 En_over_Ed = En / Ed if Ed != 0 else 0
 st.latex(r"\frac{E_{" + str(n) + r"}}{E_d} = \frac{" + f"{En:.3f}" + "}{" + f"{Ed:.3f}" + "} = " + f"{En_over_Ed:.3f}")
 
-# Зареждане на данни и построяване на графика (същия от по-горе)
+# Зареждане на данни и построяване на графика
 df_original = pd.read_csv("danni.csv")
 df_new = pd.read_csv("Оразмеряване на опън за междиннен плстH_D.csv")
 df_new.rename(columns={'Esr/Ei': 'sr_Ei'}, inplace=True)
