@@ -5,7 +5,6 @@ import numpy as np
 
 st.title("Комбинирани изолинии с изчисление на Esr")
 
-# Функция за индекси с долен индекс
 def to_subscript(number):
     subscripts = str.maketrans("0123456789", "₀₁₂₃₄₅₆₇₈₉")
     return str(number).translate(subscripts)
@@ -13,7 +12,6 @@ def to_subscript(number):
 # --- Входни параметри за Esr ---
 st.header("Изчисление на Esr")
 
-# Вход: брой пластове
 n = st.number_input("Брой пластове (n)", min_value=2, step=1, value=3)
 
 h_values = []
@@ -33,12 +31,10 @@ for i in range(n):
 h_array = np.array(h_values)
 E_array = np.array(E_values)
 
-# Изчисление само за пластове от 1 до n-1 (Python 0..n-2)
 sum_h = h_array[:-1].sum()
 weighted_sum = np.sum(E_array[:-1] * h_array[:-1])
 Esr = weighted_sum / sum_h if sum_h != 0 else 0
 
-# Формула Esr - LaTeX
 st.latex(r"Esr = \frac{\sum_{i=1}^{n-1} (E_i \cdot h_i)}{\sum_{i=1}^{n-1} h_i}")
 
 numerator = " + ".join([f"{E_values[i]} \cdot {h_values[i]}" for i in range(n-1)])
@@ -46,30 +42,15 @@ denominator = " + ".join([f"{h_values[i]}" for i in range(n-1)])
 formula_with_values = rf"Esr = \frac{{{numerator}}}{{{denominator}}} = \frac{{{weighted_sum}}}{{{sum_h}}} = {Esr:.3f}"
 st.latex(formula_with_values)
 
-# Обща дебелина до n-1 пластове
 st.latex(r"H = \sum_{i=1}^{n-1} h_i")
 st.write(f"Обща дебелина H = {sum_h:.3f}")
 st.write(f"Изчислено Esr = {Esr:.3f}")
 
-# Последният пласт (n-ти)
 h_next = h_array[-1]
 st.write(f"h{to_subscript(n)} = {h_next:.3f}")
 
-# Ed - числово поле, първоначална стойност 100
-Ed = st.number_input(
-    "Ed",
-    value=100.0,
-    step=0.1
-)
+Ed = st.number_input("Ed", value=100.0, step=0.1)
 
-# Алтернативна стойност Eₙ
-Ei_alt = st.number_input(
-    f"E (алтернативна стойност, E{to_subscript(n)})",
-    value=1000.0,
-    step=0.1
-)
-
-# Параметър D с падащо меню
 D = st.selectbox("Избери D", options=[34.0, 32.04], index=0)
 
 # Зареждане на данни за диаграмата
@@ -77,7 +58,6 @@ df_original = pd.read_csv("danni.csv")
 df_new = pd.read_csv("Оразмеряване на опън за междиннен плстH_D.csv")
 df_new.rename(columns={'Esr/Ei': 'sr_Ei'}, inplace=True)
 
-# Създаване на фигура
 fig = go.Figure()
 
 if 'Ei/Ed' in df_original.columns:
@@ -104,16 +84,17 @@ if 'sr_Ei' in df_new.columns:
             line=dict(width=2)
         ))
 
-# Добавяне на втората x-ос (σₙ)
+# Добавяне на втора x-ос (σₙ) над графиката
 fig.update_layout(
     width=700,
     height=700,
+    margin=dict(t=100),
     xaxis=dict(
         title='H/D',
         dtick=0.1,
         range=[0, 2],
-        constrain='domain',
-        domain=[0, 1]
+        domain=[0, 1],
+        anchor='y'
     ),
     xaxis2=dict(
         title=r'$\sigma_n$',
@@ -123,7 +104,9 @@ fig.update_layout(
         tickmode='linear',
         tick0=0,
         dtick=0.1,
-        showgrid=False
+        showgrid=False,
+        anchor='y',
+        position=1.0  # позиция над графиката
     ),
     yaxis=dict(
         title='y',
