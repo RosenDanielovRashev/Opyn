@@ -159,17 +159,22 @@ if lower_index is not None:
         name='Интерполирана точка'
     ))
 
-    # Добавяне на хоризонтална линия през първата точка
-    y_line = interp_point[1]
-    x_min = df_new['H/D'].min()
-    x_max = df_new['H/D'].max()
-
+    # Вертикална линия от интерполирана точка до y=0
     fig.add_trace(go.Scatter(
-        x=[x_min, x_max],
-        y=[y_line, y_line],
+        x=[interp_point[0], interp_point[0]],
+        y=[interp_point[1], 0],
+        mode='lines',
+        line=dict(color='blue', dash='dash'),
+        name='Вертикална линия до абсцисата'
+    ))
+
+    # Хоризонтална линия от интерполирана точка до x=0 по същото y
+    fig.add_trace(go.Scatter(
+        x=[0, interp_point[0]],
+        y=[interp_point[1], interp_point[1]],
         mode='lines',
         line=dict(color='purple', dash='dot'),
-        name='Хоризонтална линия през първата точка'
+        name='Хоризонтална линия до абсцисата'
     ))
 
 fig.update_layout(
