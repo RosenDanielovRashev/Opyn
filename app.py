@@ -40,7 +40,17 @@ if 'sr_Ei' in df_new.columns:
             line=dict(width=2)
         ))
 
-# Настройки на графиката с добавена втора ос по X (xaxis2) горе
+# ❗️Празна следа за активиране на горната ос (xaxis2)
+fig.add_trace(go.Scatter(
+    x=[0, 1],
+    y=[None, None],
+    mode='lines',
+    xaxis='x2',
+    showlegend=False,
+    hoverinfo='skip'
+))
+
+# Настройки на графиката с добавена горна ос
 fig.update_layout(
     width=700,
     height=700,
