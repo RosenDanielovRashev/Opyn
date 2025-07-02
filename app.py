@@ -1,8 +1,44 @@
-import streamlit as st 
+import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
+import numpy as np
 
-st.title("Комбинирани изолинии")
+st.title("Комбинирани изолинии с изчисление на Esr")
+
+# Вход: брой пластове
+n = st.number_input("Брой пластове (n)", min_value=1, step=1, value=3)
+
+# Създаване на списъци за h_i и E_i
+h_values = []
+E_values = []
+
+st.markdown("### Въведи стойности за всеки пласт")
+
+cols = st.columns(2)
+for i in range(n):
+    with cols[0]:
+        h = st.number_input(f"h_{i+1}", value=1.0, step=0.1, key=f"h_{i}")
+        h_values.append(h)
+    with cols[1]:
+        E = st.number_input(f"E_{i+1}", value=1.0, step=0.1, key=f"E_{i}")
+        E_values.append(E)
+
+# Изчисляване на Esr и H
+h_array = np.array(h_values)
+E_array = np.array(E_values)
+
+sum_h = h_array.sum()
+Esr = np.sum(E_array * h_array) / sum_h if sum_h != 0 else 0
+
+# Показване на формулите с LaTeX
+st.latex(r"Esr = \frac{\sum_{i=1}^{n} (E_i \cdot h_i)}{\sum_{i=1}^{n} h_i}")
+st.latex(r"H = \sum_{i=1}^{n} h_i")
+
+# Показване на резултатите
+st.write(f"Обща дебелина H = {sum_h:.3f}")
+st.write(f"Изчислено Esr = {Esr:.3f}")
+
+# Тук продължава твоя код с графиката...
 
 # Зареждане на оригиналните данни
 df_original = pd.read_csv("danni.csv")
@@ -60,7 +96,7 @@ fig.update_layout(
         domain=[0, 1]
     ),
     xaxis2=dict(
-        title='σₙ',   # Ето тук е името на новата ос с unicode индекс n
+        title='σₙ',
         overlaying='x',
         side='top',
         range=[0, 1],
