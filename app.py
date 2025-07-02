@@ -2,9 +2,8 @@ import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
 import numpy as np
-import os
 
-st.title("Комбинирани изолинии с изчисление на Esr и Hₙ/D")
+st.title("Комбинирани изолинии с изчисление на Esr и H_n/D")
 
 def to_subscript(number):
     subscripts = str.maketrans("0123456789", "₀₁₂₃₄₅₆₇₈₉")
@@ -13,13 +12,8 @@ def to_subscript(number):
 # Входни параметри
 n = st.number_input("Брой пластове (n)", min_value=2, step=1, value=3)
 
-# Падащо меню за D със стойности и етикети
-D_options = {
-    "D = 34.0 (тип A)": 34.0,
-    "D = 32.04 (тип B)": 32.04
-}
-D_label = st.selectbox("Избери стойност за D", options=list(D_options.keys()))
-D = D_options[D_label]
+# Падащо меню за D
+D = st.selectbox("Избери D", options=[34.0, 32.04], index=0)
 
 # Въвеждане на h_i и E_i за всеки пласт
 st.markdown("### Въведи стойности за всеки пласт")
@@ -37,59 +31,62 @@ for i in range(n):
 h_array = np.array(h_values)
 E_array = np.array(E_values)
 
-# Изчисления
+# Изчисляване на Esr за първите n-1 пласта
 sum_h_n_1 = h_array[:-1].sum()
 weighted_sum_n_1 = np.sum(E_array[:-1] * h_array[:-1])
 Esr = weighted_sum_n_1 / sum_h_n_1 if sum_h_n_1 != 0 else 0
 
+# Изчисляване на H_n и H_{n-1}
 H_n = h_array.sum()
 H_n_1 = sum_h_n_1
 
-# Формула + пресмятане за H_{n-1}
-st.latex(r"H_{n-1} = \sum_{i=1}^{n-1} h_i = " +
-         " + ".join([f"h_{{{i+1}}}" for i in range(n-1)]) +
-         f" = {H_n_1:.3f}")
+# Формула за H_{n-1}
+st.latex(r"H_{n-1} = \sum_{i=1}^{n-1} h_i")
+h_terms = " + ".join([f"h_{to_subscript(i+1)}" for i in range(n-1)])
+st.latex(r"H_{n-1} = " + h_terms)
+st.write(f"H{to_subscript(n-1)} = {H_n_1:.3f}")
 
-# Формула + пресмятане за H_n
-st.latex(r"H_n = \sum_{i=1}^{n} h_i = " +
-         " + ".join([f"h_{{{i+1}}}" for i in range(n)]) +
-         f" = {H_n:.3f}")
+# Формула за H_n
+st.latex(r"H_n = \sum_{i=1}^n h_i")
+h_terms_n = " + ".join([f"h_{to_subscript(i+1)}" for i in range(n)])
+st.latex(r"H_n = " + h_terms_n)
+st.write(f"H{to_subscript(n)} = {H_n:.3f}")
 
 # Формула и изчисления за Esr
 st.latex(r"Esr = \frac{\sum_{i=1}^{n-1} (E_i \cdot h_i)}{\sum_{i=1}^{n-1} h_i}")
+
 numerator = " + ".join([f"{E_values[i]} \cdot {h_values[i]}" for i in range(n-1)])
 denominator = " + ".join([f"{h_values[i]}" for i in range(n-1)])
-st.latex(rf"Esr = \frac{{{numerator}}}{{{denominator}}} = \frac{{{weighted_sum_n_1}}}{{{sum_h_n_1}}} = {Esr:.3f}")
+formula_with_values = rf"Esr = \frac{{{numerator}}}{{{denominator}}} = \frac{{{weighted_sum_n_1}}}{{{sum_h_n_1}}} = {Esr:.3f}"
+st.latex(formula_with_values)
 
-# Съотношение Hn / D
+# Изчисляване на съотношението H_n / D
 ratio = H_n / D if D != 0 else 0
-st.latex(r"\frac{H_n}{D} = \frac{" + f"{H_n:.3f}" + "}{" + f"{D:.3f}" + "} = " + f"{ratio:.3f}")
+st.latex(r"\frac{H_n}{D} = \frac{" + f"{H_n:.3f}" + "}{" + f"{D:.3f}" + "} = " + f"{ratio:.3f}" )
 
-# Въвеждане на Ed
+# Нов параметър Ed (въвеждане без падащо меню, начална стойност 1000)
 Ed = st.number_input("Ed", value=1000.0, step=0.1)
 
-# Изчисления с последния пласт
+# Последен пласт E_n
 En = E_values[-1]
+
+# Показване с индекс равен на броя на пластовете (например E₅ ако n=5)
 st.markdown("### Изчисления с последен пласт")
 
-st.latex(r"E_{" + str(n) + r"} = " + f"{En:.3f}")
+# Поправени LaTeX формули с rf-string за по-добра визуализация
+st.latex(rf"E_{{{n}}} = {En:.3f}")
 
 Esr_over_En = Esr / En if En != 0 else 0
-st.latex(r"\frac{Esr}{E_{" + str(n) + r"}} = \frac{" + f"{Esr:.3f}" + "}{" + f"{En:.3f}" + "} = {Esr_over_En:.3f}")
+st.latex(rf"\frac{{Esr}}{{E_{{{n}}}}} = \frac{{{Esr:.3f}}}{{{En:.3f}}} = {Esr_over_En:.3f}")
 
 En_over_Ed = En / Ed if Ed != 0 else 0
-st.latex(r"\frac{E_{" + str(n) + r"}}{E_d} = \frac{" + f"{En:.3f}" + "}{" + f"{Ed:.3f}" + "} = {En_over_Ed:.3f}")
+st.latex(rf"\frac{{E_{{{n}}}}}{{E_d}} = \frac{{{En:.3f}}}{{{Ed:.3f}}} = {En_over_Ed:.3f}")
 
-# Зареждане на CSV файловете
-if os.path.exists("danni.csv") and os.path.exists("Оразмеряване на опън за междиннен плстH_D.csv"):
-    df_original = pd.read_csv("danni.csv")
-    df_new = pd.read_csv("Оразмеряване на опън за междиннен плстH_D.csv")
-    df_new.rename(columns={'Esr/Ei': 'sr_Ei'}, inplace=True)
-else:
-    st.error("Липсващ един или повече CSV файлове. Уверете се, че 'danni.csv' и 'Оразмеряване на опън за междиннен плстH_D.csv' са в директорията.")
-    st.stop()
+# Зареждане на данни и построяване на графика
+df_original = pd.read_csv("danni.csv")
+df_new = pd.read_csv("Оразмеряване на опън за междиннен плстH_D.csv")
+df_new.rename(columns={'Esr/Ei': 'sr_Ei'}, inplace=True)
 
-# Изчертаване на графиката
 fig = go.Figure()
 
 if 'Ei/Ed' in df_original.columns:
@@ -116,23 +113,21 @@ if 'sr_Ei' in df_new.columns:
             line=dict(width=2)
         ))
 
-# ➕ ДОБАВЯНЕ НА ТОЧКАТА ОТ ВЪВЕДЕНИ ПАРАМЕТРИ
+# Добавяне на точка (Hn/D, Esr/Ei) от текущите изчисления
 fig.add_trace(go.Scatter(
     x=[ratio],
     y=[Esr_over_En],
-    mode='markers+text',
-    marker=dict(size=12, color='red'),
-    text=["Текуща точка"],
-    textposition="top center",
-    name="Текуща точка (H/D ; Esr/Ei)"
+    mode='markers',
+    name='Текуща точка (Hn/D, Esr/Ei)',
+    marker=dict(color='red', size=10, symbol='circle')
 ))
 
-# ➕ Прозрачна линия за втората ос
+# Добавяне на прозрачна линия за втората ос (σₙ)
 fig.add_trace(go.Scatter(
     x=np.linspace(0, 1, 50),
-    y=[0.05]*50,
+    y=[0.05]*50,  # някаква ниска фиксирана стойност, за да не пречи на графиката
     mode='lines',
-    line=dict(color='rgba(0,0,0,0)'),
+    line=dict(color='rgba(0,0,0,0)'),  # прозрачен
     xaxis='x2',
     showlegend=False,
     hoverinfo='skip'
@@ -155,7 +150,7 @@ fig.update_layout(
         range=[0, 1],
         showgrid=False,
         zeroline=False,
-        tickvals=np.linspace(0, 1, 11),
+        tickvals=np.linspace(0,1,11),
         dtick=0.1
     ),
     yaxis=dict(
@@ -170,3 +165,26 @@ fig.update_layout(
 )
 
 st.plotly_chart(fig, use_container_width=False)
+
+# --- Интерполация на Esr/Ei между изолиниите от df_new ---
+
+available_sr_Ei = sorted(df_new['sr_Ei'].unique())
+
+# Намиране на две съседни изолинии около текущия Esr/Ei
+lower = max([v for v in available_sr_Ei if v <= Esr_over_En], default=None)
+upper = min([v for v in available_sr_Ei if v >= Esr_over_En], default=None)
+
+if lower is not None and upper is not None and lower != upper:
+    df_lower = df_new[df_new['sr_Ei'] == lower].sort_values(by='H/D')
+    df_upper = df_new[df_new['sr_Ei'] == upper].sort_values(by='H/D')
+
+    y_lower = np.interp(ratio, df_lower['H/D'], df_lower['y'])
+    y_upper = np.interp(ratio, df_upper['H/D'], df_upper['y'])
+
+    weight = (Esr_over_En - lower) / (upper - lower)
+    interpolated_y = y_lower + (y_upper - y_lower) * weight
+
+    st.markdown("### 🎯 Интерполирана стойност на y (от изолинии):")
+    st.latex(rf"y = {y_lower:.3f} + ({y_upper:.3f} - {y_lower:.3f}) \cdot {weight:.3f} = {interpolated_y:.3f}")
+else:
+    st.warning("Esr/Ei е извън диапазона на наличните изолинии за интерполация.")
