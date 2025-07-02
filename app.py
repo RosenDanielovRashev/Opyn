@@ -31,6 +31,7 @@ for i in range(n):
 h_array = np.array(h_values)
 E_array = np.array(E_values)
 
+# Изчисление Esr за n-1 пластове
 sum_h = h_array[:-1].sum()
 weighted_sum = np.sum(E_array[:-1] * h_array[:-1])
 Esr = weighted_sum / sum_h if sum_h != 0 else 0
@@ -42,16 +43,37 @@ denominator = " + ".join([f"{h_values[i]}" for i in range(n-1)])
 formula_with_values = rf"Esr = \frac{{{numerator}}}{{{denominator}}} = \frac{{{weighted_sum}}}{{{sum_h}}} = {Esr:.3f}"
 st.latex(formula_with_values)
 
-st.latex(r"H = \sum_{i=1}^{n-1} h_i")
-st.write(f"Обща дебелина H = {sum_h:.3f}")
-st.write(f"Изчислено Esr = {Esr:.3f}")
+st.latex(r"H_{n-1} = \sum_{i=1}^{n-1} h_i")
+st.write(f"Hₙ₋₁ = {sum_h:.3f}")
+
+total_H = h_array.sum()
+st.latex(r"H = \sum_{i=1}^{n} h_i")
+st.write(f"H = {total_H:.3f}")
 
 h_next = h_array[-1]
 st.write(f"h{to_subscript(n)} = {h_next:.3f}")
 
+# Вход за Ed
 Ed = st.number_input("Ed", value=100.0, step=0.1)
 
+# Избор на D
 D = st.selectbox("Избери D", options=[34.0, 32.04], index=0)
+
+# Вход за H/D под D
+HD = st.number_input("H/D", value=0.5, step=0.01)
+
+# Последен пласт E_n
+E_last = E_array[-1]
+
+# Изчисления
+ratio_Esr_Elast = Esr / E_last if E_last != 0 else 0
+ratio_Elast_Ed = E_last / Ed if Ed != 0 else 0
+
+# Формули и резултати
+st.markdown(f"### Отношения с последен пласт E{to_subscript(n)}")
+
+st.latex(rf"\frac{{Esr}}{{E_{to_subscript(n)}}} = \frac{{{Esr:.3f}}}{{{E_last:.3f}}} = {ratio_Esr_Elast:.3f}")
+st.latex(rf"\frac{{E_{to_subscript(n)}}}{{Ed}} = \frac{{{E_last:.3f}}}{{{Ed:.3f}}} = {ratio_Elast_Ed:.3f}")
 
 # Зареждане на данни за диаграмата
 df_original = pd.read_csv("danni.csv")
