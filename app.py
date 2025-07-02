@@ -59,24 +59,19 @@ h_next = st.number_input(
 H_next = sum_h + h_next
 st.write(f"H{to_subscript(n+1)} = H + h{to_subscript(n+1)} = {sum_h:.3f} + {h_next:.3f} = {H_next:.3f}")
 
-# Вход за Ed и E (алтернативна стойност)
+# Вход за Ed (числов)
 Ed = st.number_input(
     "Ed",
     value=1000.0,
     step=0.1
 )
 
+# Вход за E (алтернативна стойност, индекс n+1)
 Ei_alt = st.number_input(
     f"E (алтернативна стойност, E{to_subscript(n+1)})",
     value=1000.0,
     step=0.1
 )
-
-# Входен параметър D с падащо меню
-D = st.selectbox("Избери D", options=[34.0, 32.04], index=0)
-
-# Входен параметър Ed с падащо меню (същият параметър, ако трябва)
-Ed_select = st.selectbox("Избери Ed", options=[34.0, 32.04], index=0)
 
 # Зареждане на данни за диаграмата
 df_original = pd.read_csv("danni.csv")
