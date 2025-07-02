@@ -141,13 +141,13 @@ if lower_index is not None:
         else:
             return np.array([x_arr[-1], y_arr[-1]])
 
+    interp_point = None
+    # Интерполирана точка между двете криви при target_Hn_D
     point_lower = interp_xy_perpendicular(df_lower, target_Hn_D)
     point_upper = interp_xy_perpendicular(df_upper, target_Hn_D)
 
     vec = point_upper - point_lower
-
     t = (target_sr_Ei - lower_sr) / (upper_sr - lower_sr)
-
     interp_point = point_lower + t * vec
 
     # Добавяне на интерполирана точка (първа точка)
@@ -168,13 +168,42 @@ if lower_index is not None:
         name='Вертикална линия до абсцисата'
     ))
 
-    # Хоризонтална линия от интерполирана точка до x=0 по същото y
+    # Хоризонтална линия от интерполирана точка до x=0 (при y = interp_point[1])
     fig.add_trace(go.Scatter(
         x=[0, interp_point[0]],
         y=[interp_point[1], interp_point[1]],
         mode='lines',
         line=dict(color='purple', dash='dot'),
-        name='Хоризонтална линия до абсцисата'
+        name='Хоризонтална линия до ординатата'
+    ))
+
+    # Търсим точката на пресичане хоризонтална линия y=interp_point[1] с изолиния Ei/Ed = En_over_Ed
+    unique_Ei_Ed = sorted(df_original['Ei/Ed'].unique())
+    closest_Ei_Ed = min(unique_Ei_Ed, key=lambda x: abs(x - En_over_Ed))
+    df_curve = df_original[df_original['Ei/Ed'] == closest_Ei_Ed].sort_values(by='H/D')
+
+    def interp_x_for_y(df, y_val):
+        x_arr = df['H/D'].values
+        y_arr = df['y'].values
+        for i in range(len(y_arr) - 1):
+            if (y_arr[i] >= y_val >= y_arr[i+1]) or (y_arr[i] <= y_val <= y_arr[i+1]):
+                return x_arr[i] + (x_arr[i+1] - x_arr[i]) * (y_val - y_arr[i]) / (y_arr[i+1] - y_arr[i])
+        # Ако y_val е извън обхвата, връщаме крайна стойност
+        if y_val < min(y_arr):
+            return x_arr[np.argmin(y_arr)]
+        else:
+            return x_arr[np.argmax(y_arr)]
+
+    x_intersect = interp_x_for_y(df_curve, interp_point[1])
+    y_intersect = interp_point[1]
+
+    # Добавяне на точката на пресичане
+    fig.add_trace(go.Scatter(
+        x=[x_intersect],
+        y=[y_intersect],
+        mode='markers',
+        marker=dict(color='green', size=12, symbol='circle'),
+        name=f'Пресичане с Ei/Ed = {closest_Ei_Ed:.3f}'
     ))
 
 fig.update_layout(
