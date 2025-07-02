@@ -12,7 +12,6 @@ def to_subscript(number):
 # Входни параметри
 n = st.number_input("Брой пластове (n)", min_value=2, step=1, value=3)
 
-# Вече избрано D от падащо меню
 D = st.selectbox("Избери D", options=[34.0, 32.04], index=0)
 
 # Въвеждане на h_i и E_i за всеки пласт
@@ -40,19 +39,16 @@ Esr = weighted_sum_n_1 / sum_h_n_1 if sum_h_n_1 != 0 else 0
 H_n = h_array.sum()
 H_n_1 = sum_h_n_1
 
-# Формула за H_{n-1}
 st.latex(r"H_{n-1} = \sum_{i=1}^{n-1} h_i")
 h_terms = " + ".join([f"h_{to_subscript(i+1)}" for i in range(n-1)])
 st.latex(r"H_{n-1} = " + h_terms)
 st.write(f"H{to_subscript(n-1)} = {H_n_1:.3f}")
 
-# Формула за H_n
 st.latex(r"H_n = \sum_{i=1}^n h_i")
 h_terms_n = " + ".join([f"h_{to_subscript(i+1)}" for i in range(n)])
 st.latex(r"H_n = " + h_terms_n)
 st.write(f"H{to_subscript(n)} = {H_n:.3f}")
 
-# Формула и изчисления за Esr
 st.latex(r"Esr = \frac{\sum_{i=1}^{n-1} (E_i \cdot h_i)}{\sum_{i=1}^{n-1} h_i}")
 
 numerator = " + ".join([f"{E_values[i]} \cdot {h_values[i]}" for i in range(n-1)])
@@ -60,26 +56,20 @@ denominator = " + ".join([f"{h_values[i]}" for i in range(n-1)])
 formula_with_values = rf"Esr = \frac{{{numerator}}}{{{denominator}}} = \frac{{{weighted_sum_n_1}}}{{{sum_h_n_1}}} = {Esr:.3f}"
 st.latex(formula_with_values)
 
-# Изчисляване на съотношението H_n / D
 ratio = H_n / D if D != 0 else 0
 st.latex(r"\frac{H_n}{D} = \frac{" + f"{H_n:.3f}" + "}{" + f"{D:.3f}" + "} = " + f"{ratio:.3f}" )
 
-# Нов параметър Ed (въвеждане без падащо меню, начална стойност 1000)
 Ed = st.number_input("Ed", value=1000.0, step=0.1)
 
-# Последен пласт E_n
 En = E_values[-1]
 
-# Показване с индекс равен на броя на пластовете (например E₅ ако n=5)
 st.markdown("### Изчисления с последен пласт")
 
 st.latex(r"E_{" + str(n) + r"} = " + f"{En:.3f}")
 
-# Изчисления за Esr / En
 Esr_over_En = Esr / En if En != 0 else 0
 st.latex(r"\frac{Esr}{E_{" + str(n) + r"}} = \frac{" + f"{Esr:.3f}" + "}{" + f"{En:.3f}" + "} = " + f"{Esr_over_En:.3f}")
 
-# Изчисления за En / Ed
 En_over_Ed = En / Ed if Ed != 0 else 0
 st.latex(r"\frac{E_{" + str(n) + r"}}{E_d} = \frac{" + f"{En:.3f}" + "}{" + f"{Ed:.3f}" + "} = " + f"{En_over_Ed:.3f}")
 
@@ -114,14 +104,13 @@ if 'sr_Ei' in df_new.columns:
             line=dict(width=2)
         ))
 
-# Търсим къде да поставим точката (target_Hn_D, target_sr_Ei)
+# Търсене къде попада Esr_over_En (това е Esr/Ei за интерполация)
+target_sr_Ei = Esr_over_En
+target_Hn_D = ratio  # Hn/D
 
-target_Hn_D = ratio  # H_n / D
-target_sr_Ei = Esr_over_En  # Esr / En
-
-# Намиране между кои изолинии на sr_Ei стойността попада
-sr_values_sorted = sorted(unique_sr_Ei)
+sr_values_sorted = sorted(df_new['sr_Ei'].unique())
 lower_index = None
+
 for i in range(len(sr_values_sorted)-1):
     if sr_values_sorted[i] <= target_sr_Ei <= sr_values_sorted[i+1]:
         lower_index = i
@@ -131,81 +120,54 @@ if lower_index is not None:
     lower_sr = sr_values_sorted[lower_index]
     upper_sr = sr_values_sorted[lower_index + 1]
 
-    # Вземаме изолиниите за долната и горната стойност
     df_lower = df_new[df_new['sr_Ei'] == lower_sr].sort_values(by='H/D')
     df_upper = df_new[df_new['sr_Ei'] == upper_sr].sort_values(by='H/D')
 
-    # Функция за намиране на y при дадено x в изолиния чрез линейна интерполация
-    def interp_y(df, x):
-        x_arr = df['H/D'].values
-        y_arr = df['y'].values
-        if x <= x_arr[0]:
-            return y_arr[0]
-        if x >= x_arr[-1]:
-            return y_arr[-1]
-        for j in range(len(x_arr)-1):
-            if x_arr[j] <= x <= x_arr[j+1]:
-                # линейна интерполация
-                y_interp = y_arr[j] + (y_arr[j+1]-y_arr[j]) * (x - x_arr[j]) / (x_arr[j+1] - x_arr[j])
-                return y_interp
-        return np.nan
-
-    y_lower = interp_y(df_lower, target_Hn_D)
-    y_upper = interp_y(df_upper, target_Hn_D)
-
-    # Изчисляваме средния наклон между точките около x0 (target_Hn_D)
-    # Приближение: използваме две точки около x0 от долната изолиния
-    def slope_at_x(df, x):
+    def interp_xy_perpendicular(df, x0):
         x_arr = df['H/D'].values
         y_arr = df['y'].values
         for j in range(len(x_arr)-1):
-            if x_arr[j] <= x <= x_arr[j+1]:
-                return (y_arr[j+1] - y_arr[j]) / (x_arr[j+1] - x_arr[j])
-        # ако извън интервала
-        return 0
+            if x_arr[j] <= x0 <= x_arr[j+1]:
+                p1 = np.array([x_arr[j], y_arr[j]])
+                p2 = np.array([x_arr[j+1], y_arr[j+1]])
+                seg_vec = p2 - p1
+                seg_len = np.linalg.norm(seg_vec)
+                if seg_len == 0:
+                    return p1
+                t = (x0 - x_arr[j]) / (x_arr[j+1] - x_arr[j])
+                point_on_seg = p1 + t * seg_vec
+                return point_on_seg
+        if x0 < x_arr[0]:
+            return np.array([x_arr[0], y_arr[0]])
+        else:
+            return np.array([x_arr[-1], y_arr[-1]])
 
-    m_lower = slope_at_x(df_lower, target_Hn_D)
-    m_upper = slope_at_x(df_upper, target_Hn_D)
-    m_avg = (m_lower + m_upper) / 2
+    point_lower = interp_xy_perpendicular(df_lower, target_Hn_D)
+    point_upper = interp_xy_perpendicular(df_upper, target_Hn_D)
 
-    # Линейна интерполация по sr_Ei (параметър t)
+    vec = point_upper - point_lower
+
     t = (target_sr_Ei - lower_sr) / (upper_sr - lower_sr)
 
-    # Перпендикулярен вектор към изолиниите
-    if m_avg != 0:
-        m_perp = -1 / m_avg
-        perp_vec = np.array([1, m_perp])
-        perp_vec = perp_vec / np.linalg.norm(perp_vec)
-    else:
-        # перпендикулярна линия е вертикална
-        perp_vec = np.array([0,1])
+    interp_point = point_lower + t * vec
 
-    # Център между изолиниите на даденото x
-    center = np.array([target_Hn_D, (y_lower + y_upper)/2])
+    perp_vec = np.array([-vec[1], vec[0]])
+    perp_vec = perp_vec / np.linalg.norm(perp_vec)
 
-    # Разстоянието между двете изолини по y
-    dist = y_upper - y_lower
+    line_length = np.linalg.norm(vec) * 1.5
+    line_start = interp_point - perp_vec * line_length/2
+    line_end = interp_point + perp_vec * line_length/2
 
-    # Смещение по перпендикулярната линия спрямо центъра,
-    # за да се намери точката на интерполация (t=0.5 е център)
-    shift = (t - 0.5) * dist
-
-    # Интерполираната точка
-    point = center + shift * perp_vec
-
-    # Добавяне на точката в графиката (точка, не звезда)
+    # Добавяне на интерполирана точка
     fig.add_trace(go.Scatter(
-        x=[point[0]],
-        y=[point[1]],
+        x=[interp_point[0]],
+        y=[interp_point[1]],
         mode='markers',
         marker=dict(color='red', size=10),
         name='Интерполирана точка'
     ))
 
-    # Добавяне на пунктирана линия за интерполация (перпендикулярна към изолиниите)
-    line_length = dist * 1.5
-    line_start = center - (line_length/2) * perp_vec
-    line_end = center + (line_length/2) * perp_vec
+    # Добавяне на пунктирана линия (перпендикулярна на изолиниите)
     fig.add_trace(go.Scatter(
         x=[line_start[0], line_end[0]],
         y=[line_start[1], line_end[1]],
@@ -214,24 +176,24 @@ if lower_index is not None:
         name='Линия на интерполация'
     ))
 
-    # Добавяне на линия от точката перпендикулярно към абсцисата (H/D)
+    # Линия от точката към x-оста (перпендикулярна към x-оста)
     fig.add_trace(go.Scatter(
-        x=[point[0], point[0]],
-        y=[point[1], 0],
+        x=[interp_point[0], interp_point[0]],
+        y=[interp_point[1], 0],
         mode='lines',
         line=dict(color='blue', dash='dash'),
         name='Перпендикуляр към H/D'
     ))
 else:
-    st.warning("Стойността Esr/En е извън диапазона на изолиниите за интерполация.")
+    st.warning("Стойността Esr/Ei е извън диапазона на изолиниите за интерполация.")
 
 fig.update_layout(
     xaxis_title="H / D",
     yaxis_title="y",
     legend_title="Изолинии",
     width=900,
-    height=600
+    height=600,
+    title='Комбинирани изолинии с точка за текущи параметри'
 )
 
 st.plotly_chart(fig, use_container_width=True)
-
