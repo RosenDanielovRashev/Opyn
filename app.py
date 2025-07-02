@@ -150,7 +150,7 @@ if lower_index is not None:
 
     interp_point = point_lower + t * vec
 
-    # Добавяне на интерполирана точка (първа точка)
+    # Добавяне на интерполирана точка (точка 1)
     fig.add_trace(go.Scatter(
         x=[interp_point[0]],
         y=[interp_point[1]],
@@ -159,44 +159,46 @@ if lower_index is not None:
         name='Интерполирана точка'
     ))
 
-    # Добавяне на линия от интерполираната точка вертикално до абсцисата (x-оста)
-    fig.add_trace(go.Scatter(
-        x=[interp_point[0], interp_point[0]],
-        y=[interp_point[1], 0],
-        mode='lines',
-        line=dict(color='blue', dash='dash'),
-        name='Линия към абсцисата'
-    ))
-
-    # --- Добавяне на ВТОРА точка, която лежи на вертикалната линия и пресича изолинията Esr/Ei ---
-
-    # Намираме най-близкия sr_Ei за Esr/Ei кривата
-    closest_sr_Ei = min(unique_sr_Ei, key=lambda x: abs(x - target_sr_Ei))
-
-    df_sr_curve = df_new[df_new['sr_Ei'] == closest_sr_Ei].sort_values(by='H/D')
-
-    x_vert_line = interp_point[0]
-
-    def interp_y_for_x(df, x_val):
+    # Функция за обратна интерполация - търси x за дадено y по кривата
+    def interp_x_for_y(df, y_val):
         x_arr = df['H/D'].values
         y_arr = df['y'].values
-        for i in range(len(x_arr) - 1):
-            if x_arr[i] <= x_val <= x_arr[i+1]:
-                return y_arr[i] + (y_arr[i+1] - y_arr[i]) * (x_val - x_arr[i]) / (x_arr[i+1] - x_arr[i])
-        if x_val < x_arr[0]:
-            return y_arr[0]
-        else:
-            return y_arr[-1]
+        for i in range(len(y_arr) - 1):
+            if (y_arr[i] >= y_val >= y_arr[i+1]) or (y_arr[i] <= y_val <= y_arr[i+1]):
+                # Линейна интерполация по y за намиране на x
+                x_interp = x_arr[i] + (x_arr[i+1] - x_arr[i]) * (y_val - y_arr[i]) / (y_arr[i+1] - y_arr[i])
+                return x_interp
+        return None
 
-    y_intersect = interp_y_for_x(df_sr_curve, x_vert_line)
+    # Намираме най-близката кривa по sr_Ei
+    closest_sr_Ei = min(unique_sr_Ei, key=lambda x: abs(x - target_sr_Ei))
+    df_sr_curve = df_new[df_new['sr_Ei'] == closest_sr_Ei].sort_values(by='H/D')
 
-    fig.add_trace(go.Scatter(
-        x=[x_vert_line],
-        y=[y_intersect],
-        mode='markers',
-        marker=dict(color='green', size=12, symbol='circle'),
-        name='Точка на пресичане Esr/Ei'
-    ))
+    # Търсим x за y=0 (точка 2)
+    x_intersect = interp_x_for_y(df_sr_curve, 0)
+
+    if x_intersect is not None:
+        y_intersect = 0
+
+        # Добавяне на точка 2 върху x-оста
+        fig.add_trace(go.Scatter(
+            x=[x_intersect],
+            y=[y_intersect],
+            mode='markers',
+            marker=dict(color='green', size=12, symbol='circle'),
+            name='Точка на пресичане Esr/Ei (на y=0)'
+        ))
+
+        # Добавяне на линия от точка 1 до точка 2
+        fig.add_trace(go.Scatter(
+            x=[interp_point[0], x_intersect],
+            y=[interp_point[1], y_intersect],
+            mode='lines',
+            line=dict(color='blue', dash='dash'),
+            name='Линия към y=0'
+        ))
+    else:
+        st.warning("Не може да се намери пресечна точка на y=0 за избраната крива.")
 
 fig.update_layout(
     xaxis_title="H / D",
