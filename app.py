@@ -73,25 +73,6 @@ h4 = st.number_input(
 H4 = sum_h + h4
 st.write(f"H₄ = H + h₄ = {sum_h:.3f} + {h4:.3f} = {H4:.3f}")
 
-if Ei_alt is not None and Ei_alt != 0:
-    E_values_alt = E_values + [Ei_alt]
-    h_values_alt = h_values + [0]  # дебелина 0 за алтернативния пласт
-    
-    E_array_alt = np.array(E_values_alt)
-    h_array_alt = np.array(h_values_alt)
-    sum_h_alt = h_array_alt.sum()
-    weighted_sum_alt = np.sum(E_array_alt * h_array_alt)
-    
-    Esr_alt = weighted_sum_alt / sum_h_alt if sum_h_alt != 0 else 0
-    
-    numerator_alt = " + ".join([f"{E_values_alt[i]} \cdot {h_values_alt[i]}" for i in range(len(E_values_alt))])
-    denominator_alt = " + ".join([f"{h_values_alt[i]}" for i in range(len(h_values_alt))])
-    formula_with_values_alt = rf"Esr = \frac{{{numerator_alt}}}{{{denominator_alt}}} = \frac{{{weighted_sum_alt}}}{{{sum_h_alt}}} = {Esr_alt:.3f}"
-    
-    st.write(f"Обновено с алтернативен E{to_subscript(alt_index)}:")
-    st.latex(formula_with_values_alt)
-    st.write(f"Обновено Esr = {Esr_alt:.3f}")
-
 # --- Номограма (графика) долу ---
 
 df_original = pd.read_csv("danni.csv")
