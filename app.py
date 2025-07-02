@@ -240,12 +240,7 @@ fig.update_layout(
     title='Графика на изолинии',
     xaxis_title='H/D',
     yaxis_title='y',
-    legend=dict(
-        yanchor="top",
-        y=0.99,
-        xanchor="left",
-        x=0.01
-    )
+    showlegend=False  # Тук премахваме легендата
 )
 
 st.plotly_chart(fig)
