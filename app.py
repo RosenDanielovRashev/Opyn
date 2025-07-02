@@ -209,7 +209,7 @@ if lower_index is not None:
             t_EiEd = (Ei_Ed_target - lower_level) / (upper_level - lower_level)
             x_interp_EiEd = round(x_lower + t_EiEd * (x_upper - x_lower), 3)
 
-            # Добавяне на хоризонтална линия от първата точка до y=0
+            # Добавяне на хоризонтална линия от първата точка до y=interp_point[1]
             fig.add_trace(go.Scatter(
                 x=[interp_point[0], x_interp_EiEd],
                 y=[interp_point[1], interp_point[1]],
@@ -218,7 +218,7 @@ if lower_index is not None:
                 name='Хоризонтална линия до пресечна точка'
             ))
 
-            # Добавяне на точка на пресичане хоризонтална линия с изолиния Ei/Ed
+            # Добавяне на оранжева точка на пресичане хоризонтална линия с изолиния Ei/Ed
             fig.add_trace(go.Scatter(
                 x=[x_interp_EiEd],
                 y=[interp_point[1]],
@@ -226,39 +226,26 @@ if lower_index is not None:
                 marker=dict(color='orange', size=10),
                 name='Пресечна точка с Ei/Ed'
             ))
-        else:
-            st.warning("Не може да се намери пресечна точка на хоризонталната линия с изолинията Ei/Ed.")
-    else:
-        st.warning("Извън интервала на наличните изолинии Ei/Ed за пресичане.")
 
-else:
-    st.warning("Esr/Ei не попада между наличните стойности на изолинии.")
-
-# --- Добавяне на прозрачна линия, за да се визуализира горната ос (от 0 до 1)
-fig.add_trace(go.Scatter(
-    x=np.linspace(0, 1, 100),
-    y=[fig.layout.yaxis.range[0] if fig.layout.yaxis.range else 0]*100,  # долна част по y
-    mode='lines',
-    line=dict(color='rgba(0,0,0,0.1)', width=3),
-    xaxis='x2',
-    showlegend=False,
-    hoverinfo='skip'
-))
+            # Добавяне на вертикална линия от оранжевата точка до y=2.5 (твоето искане)
+            fig.add_trace(go.Scatter(
+                x=[x_interp_EiEd, x_interp_EiEd],
+                y=[interp_point[1], 2.5],
+                mode='lines',
+                line=dict(color='orange', dash='dot'),
+                name='Вертикална линия от оранжева точка до y=2.5'
+            ))
 
 fig.update_layout(
+    title='Графика на изолинии',
     xaxis_title='H/D',
     yaxis_title='y',
-    title='Изолинии с интерполации',
-    showlegend=False,
-    xaxis2=dict(
-        overlaying='x',
-        side='top',
-        range=[0, 1],
-        showgrid=False,
-        zeroline=False,
-        tickmode='auto',
-        ticks='outside'
+    legend=dict(
+        yanchor="top",
+        y=0.99,
+        xanchor="left",
+        x=0.01
     )
 )
 
-st.plotly_chart(fig, use_container_width=True)
+st.plotly_chart(fig)
