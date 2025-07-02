@@ -80,20 +80,21 @@ if 'sr_Ei' in df_new.columns:
             x=df_level['H/D'],
             y=df_level['y'],
             mode='lines',
-            name=f'Esr/Ei = {sr_Ei}',  # <- корекция тук
+            name=f'Esr/Ei = {sr_Ei}',
             line=dict(width=2)
         ))
 
 fig.update_layout(
     width=700,
     height=700,
-    margin=dict(t=100),
+    margin=dict(t=120),  # Оставяме място за горната ос
     xaxis=dict(
         title='H/D',
         dtick=0.1,
         range=[0, 2],
         domain=[0, 1],
-        anchor='y'
+        anchor='y',
+        tickangle=0  # Без въртене на числата
     ),
     xaxis2=dict(
         title=r'$\sigma_n$',
@@ -105,7 +106,8 @@ fig.update_layout(
         dtick=0.1,
         showgrid=False,
         anchor='y',
-        position=1.0
+        position=1.0,
+        tickangle=0  # Без въртене на числата
     ),
     yaxis=dict(
         title='y',
