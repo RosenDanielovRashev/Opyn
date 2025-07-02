@@ -40,12 +40,16 @@ Esr = weighted_sum_n_1 / sum_h_n_1 if sum_h_n_1 != 0 else 0
 H_n = h_array.sum()
 H_n_1 = sum_h_n_1
 
-# Формула и изчисления за H_{n-1}
+# Формула за H_{n-1}
 st.latex(r"H_{n-1} = \sum_{i=1}^{n-1} h_i")
+h_terms = " + ".join([f"h_{to_subscript(i+1)}" for i in range(n-1)])
+st.latex(r"H_{n-1} = " + h_terms)
 st.write(f"H{to_subscript(n-1)} = {H_n_1:.3f}")
 
-# Формула и изчисления за H_n
+# Формула за H_n
 st.latex(r"H_n = \sum_{i=1}^n h_i")
+h_terms_n = " + ".join([f"h_{to_subscript(i+1)}" for i in range(n)])
+st.latex(r"H_n = " + h_terms_n)
 st.write(f"H{to_subscript(n)} = {H_n:.3f}")
 
 # Формула и изчисления за Esr
@@ -109,6 +113,17 @@ if 'sr_Ei' in df_new.columns:
             name=f'Esr/Ei = {sr_Ei}',
             line=dict(width=2)
         ))
+
+# Добавяне на прозрачна линия за втората ос (σₙ)
+fig.add_trace(go.Scatter(
+    x=np.linspace(0, 1, 50),
+    y=[0.05]*50,  # някаква ниска фиксирана стойност, за да не пречи на графиката
+    mode='lines',
+    line=dict(color='rgba(0,0,0,0)'),  # прозрачен
+    xaxis='x2',
+    showlegend=False,
+    hoverinfo='skip'
+))
 
 fig.update_layout(
     width=700,
