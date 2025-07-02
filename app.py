@@ -238,10 +238,42 @@ if lower_index is not None:
 
 fig.update_layout(
     title='Графика на изолинии',
-    xaxis_title='H/D',
-    yaxis_title='y',
-    showlegend=False  # Тук премахваме легендата
+    xaxis=dict(
+        title='H/D',
+        range=[0, 1],  # задаваме да стига до 1
+        showline=True,
+        showgrid=True,
+    ),
+    xaxis2=dict(
+        overlaying='x',
+        side='top',
+        range=[0, 1],  # същият диапазон
+        showline=True,
+        showgrid=False,
+        zeroline=False,
+        showticklabels=True,
+        ticks='outside'
+    ),
+    yaxis=dict(
+        title='y'
+    ),
+    legend=dict(
+        yanchor="top",
+        y=0.99,
+        xanchor="left",
+        x=0.01
+    )
 )
 
-st.plotly_chart(fig)
+# Невидим трас за активиране на xaxis2
+fig.add_trace(go.Scatter(
+    x=[0, 1],
+    y=[None, None],
+    mode='lines',
+    line=dict(color='rgba(0,0,0,0)'),
+    showlegend=False,
+    hoverinfo='skip',
+    xaxis='x2'
+))
 
+st.plotly_chart(fig)
