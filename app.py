@@ -40,7 +40,7 @@ if 'sr_Ei' in df_new.columns:
             line=dict(width=2)
         ))
 
-# ❗️Празна следа за активиране на горната ос (xaxis2)
+# Добавяне на празна следа за визуализиране на горната ос (xaxis2)
 fig.add_trace(go.Scatter(
     x=[0, 1],
     y=[None, None],
@@ -50,7 +50,7 @@ fig.add_trace(go.Scatter(
     hoverinfo='skip'
 ))
 
-# Настройки на графиката с добавена горна ос
+# Настройки на графиката с добавена горна ос с LaTeX заглавие
 fig.update_layout(
     width=700,
     height=700,
@@ -62,7 +62,7 @@ fig.update_layout(
         domain=[0, 1]
     ),
     xaxis2=dict(
-        title='Нова ос (0 до 1)',
+        title=r'$\sigma_r$',  # <-- LaTeX заглавие на новата ос
         overlaying='x',
         side='top',
         range=[0, 1],
