@@ -12,10 +12,10 @@ def to_subscript(number):
 # Входни параметри
 n = st.number_input("Брой пластове (n)", min_value=2, step=1, value=3)
 
-# Избор на D
+# Вече избрано D от падащо меню
 D = st.selectbox("Избери D", options=[34.0, 32.04], index=0)
 
-# Въвеждане на h_i и E_i
+# Въвеждане на h_i и E_i за всеки пласт
 st.markdown("### Въведи стойности за всеки пласт")
 h_values = []
 E_values = []
@@ -36,6 +36,9 @@ sum_h_n_1 = h_array[:-1].sum()
 weighted_sum_n_1 = np.sum(E_array[:-1] * h_array[:-1])
 Esr = weighted_sum_n_1 / sum_h_n_1 if sum_h_n_1 != 0 else 0
 
+# Изчисляване на H_n = сумата на всички h_i
+H_n = h_array.sum()
+
 st.latex(r"Esr = \frac{\sum_{i=1}^{n-1} (E_i \cdot h_i)}{\sum_{i=1}^{n-1} h_i}")
 
 numerator = " + ".join([f"{E_values[i]} \cdot {h_values[i]}" for i in range(n-1)])
@@ -43,24 +46,39 @@ denominator = " + ".join([f"{h_values[i]}" for i in range(n-1)])
 formula_with_values = rf"Esr = \frac{{{numerator}}}{{{denominator}}} = \frac{{{weighted_sum_n_1}}}{{{sum_h_n_1}}} = {Esr:.3f}"
 st.latex(formula_with_values)
 
-# Изчисляване на H_n
-H_n = h_array.sum()
 st.latex(r"H_n = \sum_{i=1}^n h_i")
 st.write(f"Hₙ = {H_n:.3f}")
 
-# Изчисляване и показване на H_n / D
 ratio = H_n / D if D != 0 else 0
 st.latex(r"\frac{H_n}{D} = \frac{" + f"{H_n:.3f}" + "}{" + f"{D:.3f}" + "} = " + f"{ratio:.3f}" )
 
-# Зареждане на данните за изолиниите
+# Нов параметър Ed (въвеждане без падащо меню, начална стойност 1000)
+Ed = st.number_input("Ed", value=1000.0, step=0.1)
+
+# Последен пласт E_n
+En = E_values[-1]
+
+# Формули и изчисления:
+st.markdown("### Изчисления с последен пласт")
+
+st.latex(r"E_n = E_" + to_subscript(n))
+st.write(f"E{to_subscript(n)} = {En:.3f}")
+
+# Изчисления за Esr / En
+Esr_over_En = Esr / En if En != 0 else 0
+st.latex(r"\frac{Esr}{E_n} = \frac{" + f"{Esr:.3f}" + "}{" + f"{En:.3f}" + "} = " + f"{Esr_over_En:.3f}")
+
+# Изчисления за En / Ed
+En_over_Ed = En / Ed if Ed != 0 else 0
+st.latex(r"\frac{E_n}{E_d} = \frac{" + f"{En:.3f}" + "}{" + f"{Ed:.3f}" + "} = " + f"{En_over_Ed:.3f}")
+
+# Зареждане на данни и построяване на графика (същия от по-горе)
 df_original = pd.read_csv("danni.csv")
 df_new = pd.read_csv("Оразмеряване на опън за междиннен плстH_D.csv")
 df_new.rename(columns={'Esr/Ei': 'sr_Ei'}, inplace=True)
 
-# Създаване на фигура
 fig = go.Figure()
 
-# Добавяне на изолинии от оригиналния файл
 if 'Ei/Ed' in df_original.columns:
     unique_Ei_Ed = sorted(df_original['Ei/Ed'].unique())
     for level in unique_Ei_Ed:
@@ -73,7 +91,6 @@ if 'Ei/Ed' in df_original.columns:
             line=dict(width=2)
         ))
 
-# Добавяне на изолинии от новия файл (sr_Ei)
 if 'sr_Ei' in df_new.columns:
     unique_sr_Ei = sorted(df_new['sr_Ei'].unique())
     for sr_Ei in unique_sr_Ei:
@@ -86,7 +103,6 @@ if 'sr_Ei' in df_new.columns:
             line=dict(width=2)
         ))
 
-# Настройка на осите - добавяне на втора ос x2 над графиката
 fig.update_layout(
     width=700,
     height=700,
