@@ -154,9 +154,10 @@ if lower_index is not None:
     perp_vec = np.array([-vec[1], vec[0]])
     perp_vec = perp_vec / np.linalg.norm(perp_vec)
 
-    line_length = np.linalg.norm(vec) * 1.5
-    line_start = interp_point - perp_vec * line_length/2
-    line_end = interp_point + perp_vec * line_length/2
+    # Дължина за перпендикулярната линия (но тя се маха, няма да добавим тази линия)
+    # line_length = np.linalg.norm(vec) * 1.5
+    # line_start = interp_point - perp_vec * line_length/2
+    # line_end = interp_point + perp_vec * line_length/2
 
     # Добавяне на интерполирана точка
     fig.add_trace(go.Scatter(
@@ -167,22 +168,44 @@ if lower_index is not None:
         name='Интерполирана точка'
     ))
 
-    # Добавяне на пунктирана линия (перпендикулярна на изолиниите)
-    fig.add_trace(go.Scatter(
-        x=[line_start[0], line_end[0]],
-        y=[line_start[1], line_end[1]],
-        mode='lines',
-        line=dict(color='red', dash='dot'),
-        name='Перпендикулярна линия'
-    ))
-
-    # Линия от интерполираната точка вертикално до абсцисата (x-оста)
+    # Добавяне на линия от интерполираната точка вертикално до абсцисата (x-оста)
     fig.add_trace(go.Scatter(
         x=[interp_point[0], interp_point[0]],
         y=[interp_point[1], 0],
         mode='lines',
         line=dict(color='blue', dash='dash'),
         name='Линия към абсцисата'
+    ))
+
+    # Намиране на най-близкото Ei/Ed за хоризонтална линия
+    # Тук вземаме най-близкото ниво от df_original, за да чертаем хоризонталната линия
+    closest_Ei_Ed = min(unique_Ei_Ed, key=lambda x: abs(x - En_over_Ed))
+
+    df_closest = df_original[df_original['Ei/Ed'] == closest_Ei_Ed].sort_values(by='H/D')
+
+    # Интерполация y стойност в df_closest за x = interp_point[0] (H/D)
+    x_arr_closest = df_closest['H/D'].values
+    y_arr_closest = df_closest['y'].values
+
+    def interp_y_at_x(x_arr, y_arr, x0):
+        for j in range(len(x_arr) - 1):
+            if x_arr[j] <= x0 <= x_arr[j + 1]:
+                y0 = y_arr[j] + (y_arr[j + 1] - y_arr[j]) * (x0 - x_arr[j]) / (x_arr[j + 1] - x_arr[j])
+                return y0
+        if x0 < x_arr[0]:
+            return y_arr[0]
+        else:
+            return y_arr[-1]
+
+    y_on_closest_curve = interp_y_at_x(x_arr_closest, y_arr_closest, interp_point[0])
+
+    # Добавяне на хоризонтална линия от интерполираната точка до кривата от df_original
+    fig.add_trace(go.Scatter(
+        x=[interp_point[0], interp_point[0] + (y_on_closest_curve - interp_point[1])],  # преместване по x с дължината на хор. линия
+        y=[interp_point[1], interp_point[1]],
+        mode='lines',
+        line=dict(color='green', dash='dashdot'),
+        name=f'Хоризонтална линия до Ei/Ed={closest_Ei_Ed}'
     ))
 else:
     st.warning("Стойността Esr/Ei е извън диапазона на изолиниите за интерполация.")
