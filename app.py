@@ -58,19 +58,18 @@ Ed = st.number_input("Ed", value=1000.0, step=0.1)
 # Последен пласт E_n
 En = E_values[-1]
 
-# Формули и изчисления:
+# Показване с индекс равен на броя на пластовете (например E₅ ако n=5)
 st.markdown("### Изчисления с последен пласт")
 
-st.latex(r"E_n = E_" + to_subscript(n))
-st.write(f"E{to_subscript(n)} = {En:.3f}")
+st.latex(r"E_{" + str(n) + r"} = " + f"{En:.3f}")
 
 # Изчисления за Esr / En
 Esr_over_En = Esr / En if En != 0 else 0
-st.latex(r"\frac{Esr}{E_n} = \frac{" + f"{Esr:.3f}" + "}{" + f"{En:.3f}" + "} = " + f"{Esr_over_En:.3f}")
+st.latex(r"\frac{Esr}{E_{" + str(n) + r"}} = \frac{" + f"{Esr:.3f}" + "}{" + f"{En:.3f}" + "} = " + f"{Esr_over_En:.3f}")
 
 # Изчисления за En / Ed
 En_over_Ed = En / Ed if Ed != 0 else 0
-st.latex(r"\frac{E_n}{E_d} = \frac{" + f"{En:.3f}" + "}{" + f"{Ed:.3f}" + "} = " + f"{En_over_Ed:.3f}")
+st.latex(r"\frac{E_{" + str(n) + r"}}{E_d} = \frac{" + f"{En:.3f}" + "}{" + f"{Ed:.3f}" + "} = " + f"{En_over_Ed:.3f}")
 
 # Зареждане на данни и построяване на графика (същия от по-горе)
 df_original = pd.read_csv("danni.csv")
