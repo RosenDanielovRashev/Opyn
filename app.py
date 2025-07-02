@@ -5,6 +5,11 @@ import numpy as np
 
 st.title("Комбинирани изолинии с изчисление на Esr")
 
+# Функция за индекси с долен индекс
+def to_subscript(number):
+    subscripts = str.maketrans("0123456789", "₀₁₂₃₄₅₆₇₈₉")
+    return str(number).translate(subscripts)
+
 # --- Входни параметри за Esr ---
 st.header("Изчисление на Esr")
 
@@ -15,10 +20,6 @@ h_values = []
 E_values = []
 
 st.markdown("### Въведи стойности за всеки пласт")
-
-def to_subscript(number):
-    subscripts = str.maketrans("0123456789", "₀₁₂₃₄₅₆₇₈₉")
-    return str(number).translate(subscripts)
 
 cols = st.columns(2)
 for i in range(n):
@@ -48,37 +49,41 @@ st.latex(r"H = \sum_{i=1}^{n} h_i")
 st.write(f"Обща дебелина H = {sum_h:.3f}")
 st.write(f"Изчислено Esr = {Esr:.3f}")
 
-# Алтернативна стойност за E (индекс n+1) с начална стойност 1000
-alt_index = n + 1
-Ei_alt = st.number_input(
-    f"E (алтернативна стойност, E{to_subscript(alt_index)})",
-    value=1000.0,
+# Вход за h_{n+1}
+h_next = st.number_input(
+    f"h{to_subscript(n+1)}",
+    value=0.0,
     step=0.1
 )
 
-# Въвеждане на Ed с начална стойност 1000
+H_next = sum_h + h_next
+st.write(f"H{to_subscript(n+1)} = H + h{to_subscript(n+1)} = {sum_h:.3f} + {h_next:.3f} = {H_next:.3f}")
+
+# Вход за Ed и E (алтернативна стойност)
 Ed = st.number_input(
     "Ed",
     value=1000.0,
     step=0.1
 )
 
-# Нов параметър h4
-h4 = st.number_input(
-    "h₄",
-    value=0.0,
+Ei_alt = st.number_input(
+    f"E (алтернативна стойност, E{to_subscript(n+1)})",
+    value=1000.0,
     step=0.1
 )
 
-H4 = sum_h + h4
-st.write(f"H₄ = H + h₄ = {sum_h:.3f} + {h4:.3f} = {H4:.3f}")
+# Входен параметър D с падащо меню
+D = st.selectbox("Избери D", options=[34.0, 32.04], index=0)
 
-# --- Номограма (графика) долу ---
+# Входен параметър Ed с падащо меню (същият параметър, ако трябва)
+Ed_select = st.selectbox("Избери Ed", options=[34.0, 32.04], index=0)
 
+# Зареждане на данни за диаграмата
 df_original = pd.read_csv("danni.csv")
 df_new = pd.read_csv("Оразмеряване на опън за междиннен плстH_D.csv")
 df_new.rename(columns={'Esr/Ei': 'sr_Ei'}, inplace=True)
 
+# Създаване на фигура
 fig = go.Figure()
 
 if 'Ei/Ed' in df_original.columns:
@@ -105,15 +110,7 @@ if 'sr_Ei' in df_new.columns:
             line=dict(width=2)
         ))
 
-fig.add_trace(go.Scatter(
-    x=[0,1],
-    y=[None,None],
-    mode='lines',
-    xaxis='x2',
-    showlegend=False,
-    hoverinfo='skip'
-))
-
+# Добавяне на втората x-ос (σₙ)
 fig.update_layout(
     width=700,
     height=700,
@@ -125,7 +122,7 @@ fig.update_layout(
         domain=[0, 1]
     ),
     xaxis2=dict(
-        title='σₙ',
+        title=r'$\sigma_n$',
         overlaying='x',
         side='top',
         range=[0, 1],
