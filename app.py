@@ -48,12 +48,24 @@ st.latex(r"H = \sum_{i=1}^{n} h_i")
 st.write(f"Обща дебелина H = {sum_h:.3f}")
 st.write(f"Изчислено Esr = {Esr:.3f}")
 
+# Алтернативна стойност за E (индекс n+1) с начална стойност 1000
 alt_index = n + 1
-Ei_alt = st.number_input(f"E (алтернативна стойност, E{to_subscript(alt_index)})", value=None, step=0.1)
+Ei_alt = st.number_input(
+    f"E (алтернативна стойност, E{to_subscript(alt_index)})",
+    value=1000.0,
+    step=0.1
+)
+
+# Въвеждане на Ed с начална стойност 1000
+Ed = st.number_input(
+    "Ed",
+    value=1000.0,
+    step=0.1
+)
 
 if Ei_alt is not None and Ei_alt != 0:
     E_values_alt = E_values + [Ei_alt]
-    h_values_alt = h_values + [0]
+    h_values_alt = h_values + [0]  # дебелина 0 за алтернативния пласт
     
     E_array_alt = np.array(E_values_alt)
     h_array_alt = np.array(h_values_alt)
@@ -69,16 +81,6 @@ if Ei_alt is not None and Ei_alt != 0:
     st.write(f"Обновено с алтернативен E{to_subscript(alt_index)}:")
     st.latex(formula_with_values_alt)
     st.write(f"Обновено Esr = {Esr_alt:.3f}")
-
-# --- Нови входни параметри Ed и D с падащи менюта ---
-st.markdown("---")
-st.header("Допълнителни параметри")
-
-Ed = st.selectbox("Избери Ed", options=[34, 32.04], index=0)
-D = st.selectbox("Избери D", options=[34, 32.04], index=0)
-
-st.write(f"Избрано Ed: {Ed}")
-st.write(f"Избрано D: {D}")
 
 # --- Номограма (графика) долу ---
 
@@ -108,7 +110,7 @@ if 'sr_Ei' in df_new.columns:
             x=df_level['H/D'],
             y=df_level['y'],
             mode='lines',
-            name=f'σsr/Ei = {sr_Ei}',
+            name=f'σₙ/Ei = {sr_Ei}',
             line=dict(width=2)
         ))
 
