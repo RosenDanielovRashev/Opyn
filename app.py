@@ -4,22 +4,21 @@ import plotly.graph_objects as go
 
 st.title("Комбинирани изолинии")
 
-# Зареждане на данни
-try:
-    df_original = pd.read_csv("danni.csv")
-    df_new = pd.read_csv("Оразмеряване на опън за междиннен плстH_D.csv")
-    df_new.rename(columns={'Esr/Ei': 'sr_Ei'}, inplace=True)
-except Exception as e:
-    st.error(f"Грешка при зареждане на файлове: {str(e)}")
-    st.stop()
+# Зареждане на оригиналните данни
+df_original = pd.read_csv("danni.csv")
+
+# Зареждане на новите данни
+df_new = pd.read_csv("Оразмеряване на опън за междиннен плстH_D.csv")
+df_new.rename(columns={'Esr/Ei': 'sr_Ei'}, inplace=True)
 
 # Създаване на фигура
 fig = go.Figure()
 
-# 1. Оригинални изолинии (Ei/Ed)
+# 1. Добавяне на оригиналните изолинии за Ei/Ed
 if 'Ei/Ed' in df_original.columns:
-    for level in sorted(df_original['Ei/Ed'].unique()):
-        df_level = df_original[df_original['Ei/Ed'] == level].sort_values('H/D')
+    unique_Ei_Ed = sorted(df_original['Ei/Ed'].unique())
+    for level in unique_Ei_Ed:
+        df_level = df_original[df_original['Ei/Ed'] == level].sort_values(by='H/D')
         fig.add_trace(go.Scatter(
             x=df_level['H/D'],
             y=df_level['y'],
@@ -28,10 +27,11 @@ if 'Ei/Ed' in df_original.columns:
             line=dict(width=2)
         ))
 
-# 2. Нови изолинии (σsr/Ei)
+# 2. Добавяне на новите изолинии за sr_Ei
 if 'sr_Ei' in df_new.columns:
-    for sr_Ei in sorted(df_new['sr_Ei'].unique()):
-        df_level = df_new[df_new['sr_Ei'] == sr_Ei].sort_values('H/D')
+    unique_sr_Ei = sorted(df_new['sr_Ei'].unique())
+    for sr_Ei in unique_sr_Ei:
+        df_level = df_new[df_new['sr_Ei'] == sr_Ei].sort_values(by='H/D')
         fig.add_trace(go.Scatter(
             x=df_level['H/D'],
             y=df_level['y'],
@@ -40,41 +40,37 @@ if 'sr_Ei' in df_new.columns:
             line=dict(width=2)
         ))
 
-# Настройки на осите
+# Настройки на графиката с добавена втора ос по X (xaxis2) горе
 fig.update_layout(
-    # Основна x ос (долу)
+    width=700,
+    height=700,
     xaxis=dict(
         title='H/D',
+        dtick=0.1,
         range=[0, 2],
-        dtick=0.2,
-        showgrid=True
+        constrain='domain',
+        domain=[0, 1]
     ),
-    
-    # Втора x ос (горе)
     xaxis2=dict(
-        title='Нова ос (0-1)',
+        title='Нова ос (0 до 1)',
         overlaying='x',
         side='top',
         range=[0, 1],
-        tickvals=[0, 0.2, 0.4, 0.6, 0.8, 1.0],
-        ticktext=['0', '0.2', '0.4', '0.6', '0.8', '1.0'],
-        showgrid=False,
-        anchor='y'
+        tickmode='linear',
+        tick0=0,
+        dtick=0.1,
+        showgrid=False
     ),
-    
-    # Y ос
     yaxis=dict(
         title='y',
+        dtick=0.1,
         range=[0, 2.5],
         scaleanchor='x',
         scaleratio=1
     ),
-    
-    # Общи настройки
-    width=700,
-    height=700,
-    title='Комбинирани изолинии с две x оси',
+    title='Комбинирани изолинии',
     legend=dict(title='Легенда')
 )
 
+# Показване на графиката
 st.plotly_chart(fig, use_container_width=False)
