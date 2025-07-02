@@ -170,23 +170,95 @@ if lower_index is not None:
         name='Вертикална линия към абсцисата'
     ))
 
-    # Фиксиране на оси
-    fig.update_layout(
-        xaxis=dict(title='H/D', range=[0, max(df_new['H/D'].max(), ratio)+0.1]),
-        yaxis=dict(title='y', range=[0, max(df_new['y'].max(), interp_point[1])+0.1]),
-        legend=dict(
-            orientation='h',
-            yanchor='top',
-            y=-0.3,
-            xanchor='center',
-            x=0.5
-        ),
-        margin=dict(b=120),
-        height=600,
-        width=900
-    )
+    # Функция за обратна интерполация - намира x за дадено y по изолинията
+    def interp_x_for_y(df, y_target):
+        x_arr = df['H/D'].values
+        y_arr = df['y'].values
+        for k in range(len(y_arr) - 1):
+            y1, y2 = y_arr[k], y_arr[k + 1]
+            if (y1 - y_target) * (y2 - y_target) <= 0:  # y_target между y1 и y2
+                x1, x2 = x_arr[k], x_arr[k + 1]
+                if y2 == y1:
+                    return round(x1, 3)
+                t_local = (y_target - y1) / (y2 - y1)
+                x_interp = x1 + t_local * (x2 - x1)
+                return round(x_interp, 3)
+        return None
+
+    # Намиране на изолиниите в df_original за най-близки нива на Ei/Ed
+    Ei_Ed_target = En_over_Ed
+    Ei_Ed_values_sorted = sorted(df_original['Ei/Ed'].unique())
+    lower_index_EiEd = None
+
+    for i in range(len(Ei_Ed_values_sorted)-1):
+        if Ei_Ed_values_sorted[i] <= Ei_Ed_target <= Ei_Ed_values_sorted[i+1]:
+            lower_index_EiEd = i
+            break
+
+    if lower_index_EiEd is not None:
+        lower_level = Ei_Ed_values_sorted[lower_index_EiEd]
+        upper_level = Ei_Ed_values_sorted[lower_index_EiEd + 1]
+
+        df_lower_EiEd = df_original[df_original['Ei/Ed'] == lower_level].sort_values(by='H/D')
+        df_upper_EiEd = df_original[df_original['Ei/Ed'] == upper_level].sort_values(by='H/D')
+
+        x_lower = interp_x_for_y(df_lower_EiEd, interp_point[1])
+        x_upper = interp_x_for_y(df_upper_EiEd, interp_point[1])
+
+        if x_lower is not None and x_upper is not None:
+            t_EiEd = (Ei_Ed_target - lower_level) / (upper_level - lower_level)
+            x_interp_EiEd = round(x_lower + t_EiEd * (x_upper - x_lower), 3)
+
+            # Добавяне на хоризонтална линия от първата точка до y=0
+            fig.add_trace(go.Scatter(
+                x=[interp_point[0], x_interp_EiEd],
+                y=[interp_point[1], interp_point[1]],
+                mode='lines',
+                line=dict(color='green', dash='dash'),
+                name='Хоризонтална линия до пресечна точка'
+            ))
+
+            # Добавяне на точка на пресичане хоризонтална линия с изолиния Ei/Ed
+            fig.add_trace(go.Scatter(
+                x=[x_interp_EiEd],
+                y=[interp_point[1]],
+                mode='markers',
+                marker=dict(color='orange', size=10),
+                name='Пресечна точка с Ei/Ed'
+            ))
+        else:
+            st.warning("Не може да се намери пресечна точка на хоризонталната линия с изолинията Ei/Ed.")
+    else:
+        st.warning("Извън интервала на наличните изолинии Ei/Ed за пресичане.")
 
 else:
-    st.warning("Не е намерен подходящ интервал за интерполация на Esr/Ei.")
+    st.warning("Esr/Ei не попада между наличните стойности на изолинии.")
+
+# --- Добавяне на прозрачна линия, за да се визуализира горната ос (от 0 до 1)
+fig.add_trace(go.Scatter(
+    x=np.linspace(0, 1, 100),
+    y=[fig.layout.yaxis.range[0] if fig.layout.yaxis.range else 0]*100,  # долна част по y
+    mode='lines',
+    line=dict(color='rgba(0,0,0,0.1)', width=3),
+    xaxis='x2',
+    showlegend=False,
+    hoverinfo='skip'
+))
+
+fig.update_layout(
+    xaxis_title='H/D',
+    yaxis_title='y',
+    title='Изолинии с интерполации',
+    showlegend=False,
+    xaxis2=dict(
+        overlaying='x',
+        side='top',
+        range=[0, 1],
+        showgrid=False,
+        zeroline=False,
+        tickmode='auto',
+        ticks='outside'
+    )
+)
 
 st.plotly_chart(fig, use_container_width=True)
