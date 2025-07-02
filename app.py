@@ -271,9 +271,9 @@ fig.update_layout(
 
 st.plotly_chart(fig)
 
-# Проверяваме дали имаме нужните стойности за изчисляване на σ_r
-if ('interp_point' in locals()) and ('x_interp_EiEd' in locals()) and (interp_point is not None) and (x_interp_EiEd is not None):
-    sigma_r = abs(interp_point[0] - x_interp_EiEd) / 2
+# Проверка дали x_interp_EiEd е дефинирана и не е None
+if ('x_interp_EiEd' in locals()) and (x_interp_EiEd is not None):
+    sigma_r = x_interp_EiEd / 2
     st.markdown(f"**σ_r = {sigma_r:.3f}**")
 else:
     st.markdown("**σ_r = -** (Няма изчислена стойност)")
