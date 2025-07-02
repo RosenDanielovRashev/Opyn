@@ -234,11 +234,31 @@ if lower_index is not None:
 else:
     st.warning("Esr/Ei не попада между наличните стойности на изолинии.")
 
+# --- Добавяне на прозрачна линия, за да се визуализира горната ос (от 0 до 1)
+fig.add_trace(go.Scatter(
+    x=np.linspace(0, 1, 100),
+    y=[fig.layout.yaxis.range[0] if fig.layout.yaxis.range else 0]*100,  # долна част по y
+    mode='lines',
+    line=dict(color='rgba(0,0,0,0.1)', width=3),
+    xaxis='x2',
+    showlegend=False,
+    hoverinfo='skip'
+))
+
 fig.update_layout(
     xaxis_title='H/D',
     yaxis_title='y',
     title='Изолинии с интерполации',
-    showlegend=False  # махаме легендата
+    showlegend=False,
+    xaxis2=dict(
+        overlaying='x',
+        side='top',
+        range=[0, 1],
+        showgrid=False,
+        zeroline=False,
+        tickmode='auto',
+        ticks='outside'
+    )
 )
 
 st.plotly_chart(fig, use_container_width=True)
