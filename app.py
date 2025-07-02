@@ -11,7 +11,6 @@ def to_subscript(number):
 
 # Входни параметри
 n = st.number_input("Брой пластове (n)", min_value=2, step=1, value=3)
-
 D = st.selectbox("Избери D", options=[34.0, 32.04], index=0)
 
 # Въвеждане на h_i и E_i за всеки пласт
@@ -151,10 +150,7 @@ if lower_index is not None:
 
     interp_point = point_lower + t * vec
 
-    perp_vec = np.array([-vec[1], vec[0]])
-    perp_vec = perp_vec / np.linalg.norm(perp_vec)
-
-    # Добавяне на интерполирана точка
+    # Добавяне на интерполирана точка (първа точка)
     fig.add_trace(go.Scatter(
         x=[interp_point[0]],
         y=[interp_point[1]],
@@ -172,69 +168,35 @@ if lower_index is not None:
         name='Линия към абсцисата'
     ))
 
-    # Намиране на най-близкото Ei/Ed за хоризонтална линия
-    closest_Ei_Ed = min(unique_Ei_Ed, key=lambda x: abs(x - En_over_Ed))
+    # --- Добавяне на ВТОРА точка, която лежи на вертикалната линия и пресича изолинията Esr/Ei ---
 
-    df_closest = df_original[df_original['Ei/Ed'] == closest_Ei_Ed].sort_values(by='H/D')
+    # Намираме най-близкия sr_Ei за Esr/Ei кривата
+    closest_sr_Ei = min(unique_sr_Ei, key=lambda x: abs(x - target_sr_Ei))
 
-    # Интерполация y стойност в df_closest за x = interp_point[0] (H/D)
-    x_arr_closest = df_closest['H/D'].values
-    y_arr_closest = df_closest['y'].values
+    df_sr_curve = df_new[df_new['sr_Ei'] == closest_sr_Ei].sort_values(by='H/D')
 
-    def interp_y_at_x(x_arr, y_arr, x0):
-        for j in range(len(x_arr) - 1):
-            if x_arr[j] <= x0 <= x_arr[j + 1]:
-                y0 = y_arr[j] + (y_arr[j + 1] - y_arr[j]) * (x0 - x_arr[j]) / (x_arr[j + 1] - x_arr[j])
-                return y0
-        if x0 < x_arr[0]:
+    x_vert_line = interp_point[0]
+
+    def interp_y_for_x(df, x_val):
+        x_arr = df['H/D'].values
+        y_arr = df['y'].values
+        for i in range(len(x_arr) - 1):
+            if x_arr[i] <= x_val <= x_arr[i+1]:
+                return y_arr[i] + (y_arr[i+1] - y_arr[i]) * (x_val - x_arr[i]) / (x_arr[i+1] - x_arr[i])
+        if x_val < x_arr[0]:
             return y_arr[0]
         else:
             return y_arr[-1]
 
-    y_on_closest_curve = interp_y_at_x(x_arr_closest, y_arr_closest, interp_point[0])
+    y_intersect = interp_y_for_x(df_sr_curve, x_vert_line)
 
-    # Добавяне на хоризонтална линия от интерполираната точка до кривата от df_original
     fig.add_trace(go.Scatter(
-        x=[interp_point[0], interp_point[0]],
-        y=[interp_point[1], y_on_closest_curve],
-        mode='lines',
-        line=dict(color='green', dash='dot'),
-        name='Хоризонтална линия до кривата'
+        x=[x_vert_line],
+        y=[y_intersect],
+        mode='markers',
+        marker=dict(color='green', size=12, symbol='circle'),
+        name='Точка на пресичане Esr/Ei'
     ))
-
-# ---- Тук добавяме динамичната точка ----
-
-# Вземаме най-близкото Ei/Ed към En_over_Ed за точка 1
-closest_Ei_Ed_for_point = min(unique_Ei_Ed, key=lambda x: abs(x - En_over_Ed))
-df_closest_for_point = df_original[df_original['Ei/Ed'] == closest_Ei_Ed_for_point].sort_values(by='H/D')
-
-# Първа точка x от тази крива
-x_first_point = df_closest_for_point['H/D'].values[0]
-
-# Интерполация y за x_first_point по крива, близка до En_over_Ed
-closest_curve = min(unique_Ei_Ed, key=lambda x: abs(x - En_over_Ed))
-df_curve = df_original[df_original['Ei/Ed'] == closest_curve].sort_values(by='H/D')
-x_arr_curve = df_curve['H/D'].values
-y_arr_curve = df_curve['y'].values
-
-def interp_y(x_arr, y_arr, x0):
-    for j in range(len(x_arr) - 1):
-        if x_arr[j] <= x0 <= x_arr[j + 1]:
-            return y_arr[j] + (y_arr[j + 1] - y_arr[j]) * (x0 - x_arr[j]) / (x_arr[j + 1] - x_arr[j])
-    if x0 < x_arr[0]:
-        return y_arr[0]
-    return y_arr[-1]
-
-y_interpolated = interp_y(x_arr_curve, y_arr_curve, x_first_point)
-
-# Добавяне на динамичната точка на графиката
-fig.add_trace(go.Scatter(
-    x=[x_first_point],
-    y=[y_interpolated],
-    mode='markers',
-    marker=dict(color='purple', size=12, symbol='diamond'),
-    name='Динамична точка'
-))
 
 fig.update_layout(
     xaxis_title="H / D",
