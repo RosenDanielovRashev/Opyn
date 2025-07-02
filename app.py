@@ -80,11 +80,10 @@ if 'sr_Ei' in df_new.columns:
             x=df_level['H/D'],
             y=df_level['y'],
             mode='lines',
-            name=f'σₙ/Ei = {sr_Ei}',
+            name=f'Esr/Ei = {sr_Ei}',  # <- корекция тук
             line=dict(width=2)
         ))
 
-# Добавяне на втора x-ос (σₙ) над графиката
 fig.update_layout(
     width=700,
     height=700,
@@ -106,7 +105,7 @@ fig.update_layout(
         dtick=0.1,
         showgrid=False,
         anchor='y',
-        position=1.0  # позиция над графиката
+        position=1.0
     ),
     yaxis=dict(
         title='y',
