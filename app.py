@@ -226,6 +226,30 @@ if lower_index is not None:
                 marker=dict(color='orange', size=10),
                 name='Пресечна точка с Ei/Ed'
             ))
+
+            # === Добавяне на вертикална линия от втората точка нагоре до горната ос (y=1) ===
+            fig.add_trace(go.Scatter(
+                x=[x_interp_EiEd, x_interp_EiEd],
+                y=[interp_point[1], 1],
+                mode='lines',
+                line=dict(color='purple', dash='dot'),
+                name='Вертикална линия към горната ос'
+            ))
+
+            # Добавяне на анотация с разстоянието (1 - interp_point[1])
+            distance_up = 1 - interp_point[1]
+            fig.add_annotation(
+                x=x_interp_EiEd,
+                y=interp_point[1] + distance_up / 2,
+                text=f"Разстояние: {distance_up:.3f}",
+                showarrow=True,
+                arrowhead=2,
+                ax=40,
+                ay=0,
+                font=dict(color="purple", size=12),
+                align="center"
+            )
+
         else:
             st.warning("Не може да се намери пресечна точка на хоризонталната линия с изолинията Ei/Ed.")
     else:
@@ -234,31 +258,45 @@ if lower_index is not None:
 else:
     st.warning("Esr/Ei не попада между наличните стойности на изолинии.")
 
-# --- Добавяне на прозрачна линия, за да се визуализира горната ос (от 0 до 1)
-fig.add_trace(go.Scatter(
-    x=np.linspace(0, 1, 100),
-    y=[fig.layout.yaxis.range[0] if fig.layout.yaxis.range else 0]*100,  # долна част по y
-    mode='lines',
-    line=dict(color='rgba(0,0,0,0.1)', width=3),
-    xaxis='x2',
-    showlegend=False,
-    hoverinfo='skip'
-))
-
+# --- Добавяне на горна x-ос (xaxis2), мащабирана от 0 до 1 и с еднаква дължина
 fig.update_layout(
-    xaxis_title='H/D',
-    yaxis_title='y',
-    title='Изолинии с интерполации',
-    showlegend=False,
+    xaxis=dict(
+        domain=[0, 1],
+        title='H/D',
+        mirror=True,
+        ticks="outside",
+        showline=True,
+        showgrid=True,
+        zeroline=False,
+    ),
+    yaxis=dict(
+        title='y',
+        range=[0, max(df_original['y'].max(), df_new['y'].max(), 1.2)],
+        zeroline=False,
+    ),
     xaxis2=dict(
-        overlaying='x',
+        domain=[0, 1],
+        anchor='y2',
         side='top',
+        title='Нова X-ос (0 до 1)',
         range=[0, 1],
+        showline=True,
+        showticklabels=True,
+        ticks='outside',
+        zeroline=False,
+    ),
+    yaxis2=dict(
+        domain=[0.95, 1],  # Малко пространство горе за новата ос
+        anchor='x2',
+        showticklabels=False,
         showgrid=False,
         zeroline=False,
-        tickmode='auto',
-        ticks='outside'
-    )
+    ),
+    height=600,
+    legend=dict(y=0.5, traceorder='normal', font_size=12)
 )
+
+# Свързване на горната ос с оригиналната x-ос
+fig.update_traces(xaxis='x', yaxis='y')
 
 st.plotly_chart(fig, use_container_width=True)
