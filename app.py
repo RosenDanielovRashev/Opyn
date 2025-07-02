@@ -1,47 +1,124 @@
 import streamlit as st 
 import pandas as pd
 import plotly.graph_objects as go
+import plotly.express as px
 
-st.title("Изолинии с реално съотношение 1:1")
+st.title("Комбинирани изолинии")
 
-# Зареждане на данни
-df = pd.read_csv("danni.csv")
+# Зареждане на оригиналните данни
+try:
+    df_original = pd.read_csv("danni.csv")
+    st.write("Оригинални данни (danni.csv):", df_original.head())
+except FileNotFoundError:
+    st.error("Файлът 'danni.csv' не е намерен")
+    df_original = pd.DataFrame()
 
-# Показване на данни
-st.write("Примерни данни:", df.head())
+# Зареждане на новите данни
+try:
+    df_new = pd.read_csv("Оразмеряване на опън за междиннен плстH_D.csv")
+    df_new.rename(columns={'Esr/Ei': 'sr_Ei'}, inplace=True)  # Преименуване на колоната
+    st.write("Нови данни:", df_new.head())
+except FileNotFoundError:
+    st.error("Файлът 'Оразмеряване на опън за междиннен плстH_D.csv' не е намерен")
+    df_new = pd.DataFrame()
 
-unique_levels = sorted(df['Ei/Ed'].unique())
-
+# Създаване на фигура
 fig = go.Figure()
 
-for level in unique_levels:
-    df_level = df[df['Ei/Ed'] == level].sort_values(by='H/D')
-    fig.add_trace(go.Scatter(
-        x=df_level['H/D'],
-        y=df_level['y'],
-        mode='lines',
-        name=f'Ei/Ed = {level}',
-        line=dict(width=2)
-    ))
+# 1. Добавяне на оригиналните изолинии за Ei/Ed (от danni.csv)
+if not df_original.empty and 'Ei/Ed' in df_original.columns:
+    unique_Ei_Ed = sorted(df_original['Ei/Ed'].unique())
+    for level in unique_Ei_Ed:
+        df_level = df_original[df_original['Ei/Ed'] == level].sort_values(by='H/D')
+        fig.add_trace(go.Scatter(
+            x=df_level['H/D'],
+            y=df_level['y'],
+            mode='lines',
+            name=f'Ei/Ed = {level}',
+            line=dict(width=3, color='blue'),
+            visible=True
+        ))
 
+# 2. Добавяне на новите изолинии за sr_Ei (от новия файл)
+if not df_new.empty and 'sr_Ei' in df_new.columns:
+    unique_sr_Ei = sorted(df_new['sr_Ei'].unique())
+    colors = px.colors.qualitative.Dark2
+    for i, sr_Ei in enumerate(unique_sr_Ei):
+        df_level = df_new[df_new['sr_Ei'] == sr_Ei].sort_values(by='H/D')
+        fig.add_trace(go.Scatter(
+            x=df_level['H/D'],
+            y=df_level['y'],
+            mode='lines+markers',
+            name=f'σsr/Ei = {sr_Ei}',
+            line=dict(width=2, dash='dot', color=colors[i % len(colors)]),
+            marker=dict(size=6),
+            visible=True
+        ))
+
+# Настройки на графиката
 fig.update_layout(
-    width=700,   # Ширина на графиката в пиксели
-    height=700,  # Височина на графиката в пиксели (за 1:1 квадрат)
+    width=800,
+    height=800,
     xaxis=dict(
         title='H/D',
         dtick=0.1,
         range=[0, 2],
-        constrain='domain',  # опционално, за да се ограничи разтягането
+        constrain='domain',
+        showgrid=True,
+        gridwidth=1
     ),
     yaxis=dict(
         title='y',
         dtick=0.1,
         range=[0, 2.5],
-        scaleanchor='x',  # Скалата по y е привързана към x -> реален мащаб 1:1
-        scaleratio=1      # гарантира съотношение 1:1 (понякога излишно, но няма да навреди)
+        scaleanchor='x',
+        scaleratio=1,
+        showgrid=True,
+        gridwidth=1
     ),
-    title='Изолинии с реален мащаб 1:1',
-    legend=dict(title='Легенда')
+    title='Комбинирани изолинии: Ei/Ed (плъсти линии) и σsr/Ei (пунктирани)',
+    legend=dict(
+        title='Легенда',
+        orientation="h",
+        yanchor="bottom",
+        y=1.02,
+        xanchor="right",
+        x=1
+    ),
+    hovermode='closest'
 )
 
-st.plotly_chart(fig, use_container_width=False)  # с False, за да не се мащабира според контейнера
+# Бутони за превключване между различните типове изолинии
+buttons = [
+    dict(label="Всички",
+         method="update",
+         args=[{"visible": [True]*len(fig.data)}]),
+    dict(label="Само Ei/Ed",
+         method="update",
+         args=[{"visible": [True if trace.name.startswith('Ei/Ed') else False for trace in fig.data]}]),
+    dict(label="Само σsr/Ei",
+         method="update",
+         args=[{"visible": [True if trace.name.startswith('σsr/Ei') else False for trace in fig.data]}])
+]
+
+fig.update_layout(
+    updatemenus=[dict(
+        type="buttons",
+        direction="right",
+        x=0.5,
+        xanchor="center",
+        y=1.15,
+        yanchor="top",
+        buttons=buttons
+    )]
+)
+
+st.plotly_chart(fig, use_container_width=False)
+
+# Допълнителна информация
+st.markdown("""
+### Информация за графиката:
+- **Сини плъсти линии**: Изолинии за Ei/Ed (от danni.csv)
+- **Пунктирани цветни линии**: Изолинии за σsr/Ei (от новия файл)
+- **Можете да филтрирате изолиниите** с бутоните над графиката
+""")
