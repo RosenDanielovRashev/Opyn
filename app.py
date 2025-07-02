@@ -9,8 +9,8 @@ try:
     df_original = pd.read_csv("danni.csv")
     df_new = pd.read_csv("Оразмеряване на опън за междиннен плстH_D.csv")
     df_new.rename(columns={'Esr/Ei': 'sr_Ei'}, inplace=True)
-except FileNotFoundError as e:
-    st.error(f"Грешка при зареждане на файл: {e}")
+except Exception as e:
+    st.error(f"Грешка при зареждане на файлове: {str(e)}")
     st.stop()
 
 # Създаване на фигура
@@ -40,31 +40,41 @@ if 'sr_Ei' in df_new.columns:
             line=dict(width=2)
         ))
 
-# Допълнителна ос x отгоре
+# Настройки на осите
 fig.update_layout(
-    xaxis2=dict(
-        title="Нова ос",
-        overlaying="x",
-        side="top",
-        range=[0, 1],  # Обхват 0-1
-        matches="x",   # Синхронизиране с основната ос
-        showgrid=False,
-        tickvals=[0, 0.2, 0.4, 0.6, 0.8, 1.0]  # Опционално: задаване на ticks
-    ),
+    # Основна x ос (долу)
     xaxis=dict(
-        title="H/D",
+        title='H/D',
         range=[0, 2],
-        dtick=0.2
+        dtick=0.2,
+        showgrid=True
     ),
+    
+    # Втора x ос (горе)
+    xaxis2=dict(
+        title='Нова ос (0-1)',
+        overlaying='x',
+        side='top',
+        range=[0, 1],
+        tickvals=[0, 0.2, 0.4, 0.6, 0.8, 1.0],
+        ticktext=['0', '0.2', '0.4', '0.6', '0.8', '1.0'],
+        showgrid=False,
+        anchor='y'
+    ),
+    
+    # Y ос
     yaxis=dict(
-        title="y",
+        title='y',
         range=[0, 2.5],
-        scaleanchor="x",
+        scaleanchor='x',
         scaleratio=1
     ),
+    
+    # Общи настройки
     width=700,
     height=700,
-    legend=dict(title="Легенда")
+    title='Комбинирани изолинии с две x оси',
+    legend=dict(title='Легенда')
 )
 
 st.plotly_chart(fig, use_container_width=False)
