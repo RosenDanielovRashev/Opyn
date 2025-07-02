@@ -41,7 +41,7 @@ Esr = weighted_sum / sum_h if sum_h != 0 else 0
 # Показване на формулата с LaTeX
 st.latex(r"Esr = \frac{\sum_{i=1}^{n} (E_i \cdot h_i)}{\sum_{i=1}^{n} h_i}")
 
-# Показване на формулата с конкретни стойности (пример за n=3)
+# Показване на формулата с конкретни стойности (пример за n пластове)
 numerator = " + ".join([f"{E_values[i]} \cdot {h_values[i]}" for i in range(n)])
 denominator = " + ".join([f"{h_values[i]}" for i in range(n)])
 formula_with_values = rf"Esr = \frac{{{numerator}}}{{{denominator}}} = \frac{{{weighted_sum}}}{{{sum_h}}} = {Esr:.3f}"
@@ -51,22 +51,34 @@ st.latex(r"H = \sum_{i=1}^{n} h_i")
 st.write(f"Обща дебелина H = {sum_h:.3f}")
 st.write(f"Изчислено Esr = {Esr:.3f}")
 
-# Отделно въвеждане за Ei на последния пласт (под изчисленото Esr)
-Ei_last = st.number_input(f"E (последен пласт, E{to_subscript(n)}) - алтернативна стойност", value=None, step=0.1)
+# Въвеждане за алтернативно Ei с индекс n+1
+alt_index = n + 1
+Ei_alt = st.number_input(f"E (алтернативна стойност, E{to_subscript(alt_index)})", value=None, step=0.1)
 
-# Ако е зададено Ei_last, замени последния Ei с него и обнови изчислението и показването
-if Ei_last is not None and Ei_last != 0:
-    E_values[-1] = Ei_last
-    E_array = np.array(E_values)
-    weighted_sum = np.sum(E_array * h_array)
-    Esr = weighted_sum / sum_h if sum_h != 0 else 0
-
-    numerator = " + ".join([f"{E_values[i]} \cdot {h_values[i]}" for i in range(n)])
-    formula_with_values = rf"Esr = \frac{{{numerator}}}{{{denominator}}} = \frac{{{weighted_sum}}}{{{sum_h}}} = {Esr:.3f}"
+if Ei_alt is not None and Ei_alt != 0:
+    # Добавяме новия E към списъка с E_values
+    E_values_alt = E_values + [Ei_alt]
+    # Също добавяме един h с 0 (т.е. няма дебелина) - или може да добавиш дебелина по избор
+    h_values_alt = h_values + [0]
     
-    st.write(f"Обновено с алтернативен E{to_subscript(n)}:")
-    st.latex(formula_with_values)
-    st.write(f"Обновено Esr = {Esr:.3f}")
+    E_array_alt = np.array(E_values_alt)
+    h_array_alt = np.array(h_values_alt)
+    sum_h_alt = h_array_alt.sum()
+    weighted_sum_alt = np.sum(E_array_alt * h_array_alt)
+    
+    # Ако добавеният h е 0, изчислението не се променя - може да сложиш h=4 по желание
+    if sum_h_alt == 0:
+        Esr_alt = 0
+    else:
+        Esr_alt = weighted_sum_alt / sum_h_alt
+    
+    numerator_alt = " + ".join([f"{E_values_alt[i]} \cdot {h_values_alt[i]}" for i in range(len(E_values_alt))])
+    denominator_alt = " + ".join([f"{h_values_alt[i]}" for i in range(len(h_values_alt))])
+    formula_with_values_alt = rf"Esr = \frac{{{numerator_alt}}}{{{denominator_alt}}} = \frac{{{weighted_sum_alt}}}{{{sum_h_alt}}} = {Esr_alt:.3f}"
+    
+    st.write(f"Обновено с алтернативен E{to_subscript(alt_index)}:")
+    st.latex(formula_with_values_alt)
+    st.write(f"Обновено Esr = {Esr_alt:.3f}")
 
 # --- Номограма (графика) долу ---
 
