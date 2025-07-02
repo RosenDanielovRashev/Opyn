@@ -88,8 +88,7 @@ if 'Ei/Ed' in df_original.columns:
             y=df_level['y'],
             mode='lines',
             name=f'Ei/Ed = {level}',
-            line=dict(width=2),
-            showlegend=False
+            line=dict(width=2)
         ))
 
 if 'sr_Ei' in df_new.columns:
@@ -101,8 +100,7 @@ if 'sr_Ei' in df_new.columns:
             y=df_level['y'],
             mode='lines',
             name=f'Esr/Ei = {sr_Ei}',
-            line=dict(width=2),
-            showlegend=False
+            line=dict(width=2)
         ))
 
 # --- Търсене на интервал между две изолинии за Esr/Ei (Esr_over_En)
@@ -160,8 +158,7 @@ if lower_index is not None:
         y=[interp_point[1]],
         mode='markers',
         marker=dict(color='red', size=10),
-        name='Интерполирана точка',
-        showlegend=False
+        name='Интерполирана точка'
     ))
 
     # Добавяне на вертикална линия от точката до x-оста (x=interp_point[0], y от interp_point[1] до 0)
@@ -170,8 +167,7 @@ if lower_index is not None:
         y=[interp_point[1], 0],
         mode='lines',
         line=dict(color='blue', dash='dash'),
-        name='Вертикална линия към абсцисата',
-        showlegend=False
+        name='Вертикална линия към абсцисата'
     ))
 
     # Функция за обратна интерполация - намира x за дадено y по изолинията
@@ -219,8 +215,7 @@ if lower_index is not None:
                 y=[interp_point[1], interp_point[1]],
                 mode='lines',
                 line=dict(color='green', dash='dash'),
-                name='Хоризонтална линия до пресечна точка',
-                showlegend=False
+                name='Хоризонтална линия до пресечна точка'
             ))
 
             # Добавяне на оранжева точка на пресичане хоризонтална линия с изолиния Ei/Ed
@@ -229,8 +224,7 @@ if lower_index is not None:
                 y=[interp_point[1]],
                 mode='markers',
                 marker=dict(color='orange', size=10),
-                name='Пресечна точка с Ei/Ed',
-                showlegend=False
+                name='Пресечна точка с Ei/Ed'
             ))
 
             # Добавяне на вертикална линия от оранжевата точка до y=2.5 (твоето искане)
@@ -239,32 +233,14 @@ if lower_index is not None:
                 y=[interp_point[1], 2.5],
                 mode='lines',
                 line=dict(color='orange', dash='dot'),
-                name='Вертикална линия от оранжева точка до y=2.5',
-                showlegend=False
+                name='Вертикална линия от оранжева точка до y=2.5'
             ))
 
 fig.update_layout(
     title='Графика на изолинии',
-    xaxis=dict(
-        title='H/D',
-        range=[0, 1],
-        showline=True,
-        showgrid=True,
-    ),
-    xaxis2=dict(
-        overlaying='x',
-        side='top',
-        range=[0, 1],
-        showline=True,
-        showgrid=False,
-        zeroline=False,
-        showticklabels=True,
-        ticks='outside'
-    ),
-    yaxis=dict(
-        title='y'
-    ),
-    showlegend=False  # Скриваме легендата
+    xaxis_title='H/D',
+    yaxis_title='y',
+    showlegend=False  # Тук премахваме легендата
 )
 
 st.plotly_chart(fig)
