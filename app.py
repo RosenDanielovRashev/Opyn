@@ -94,7 +94,7 @@ if 'Ei/Ed' in df_original.columns:
             mode='lines',
             name=f'Ei/Ed = {level}',
             line=dict(width=2)
-        )
+        ))
 
 # Добавяне на изолинии от новите данни
 if 'sr_Ei' in df_new.columns:
@@ -107,7 +107,7 @@ if 'sr_Ei' in df_new.columns:
             mode='lines',
             name=f'Esr/Ei = {sr_Ei}',
             line=dict(width=2)
-        )
+        ))
 
 # Интерполационна логика
 if 'sr_Ei' in df_new.columns:
