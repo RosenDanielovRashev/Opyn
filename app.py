@@ -170,59 +170,23 @@ if lower_index is not None:
         name='Вертикална линия към абсцисата'
     ))
 
-    def interp_x_for_y(df, y_target):
-        x_arr = df['H/D'].values
-        y_arr = df['y'].values
-        for k in range(len(y_arr) - 1):
-            y1, y2 = y_arr[k], y_arr[k + 1]
-            if (y1 - y_target) * (y2 - y_target) <= 0:
-                x1, x2 = x_arr[k], x_arr[k + 1]
-                if y2 == y1:
-                    return round(x1, 3)
-                t_local = (y_target - y1) / (y2 - y1)
-                x_interp = x1 + t_local * (x2 - x1)
-                return round(x_interp, 3)
-        return None
-
-    x_at_y_zero_lower = interp_x_for_y(df_lower, 0)
-    x_at_y_zero_upper = interp_x_for_y(df_upper, 0)
-
-    if x_at_y_zero_lower is not None and x_at_y_zero_upper is not None:
-        x_on_xaxis = x_at_y_zero_lower + t * (x_at_y_zero_upper - x_at_y_zero_lower)
-        x_on_xaxis = round(x_on_xaxis, 3)
-        # Вертикална линия от interp_point[0], interp_point[1] до interp_point[0], 0 е вече добавена горе
+    # Фиксиране на оси
+    fig.update_layout(
+        xaxis=dict(title='H/D', range=[0, max(df_new['H/D'].max(), ratio)+0.1]),
+        yaxis=dict(title='y', range=[0, max(df_new['y'].max(), interp_point[1])+0.1]),
+        legend=dict(
+            orientation='h',
+            yanchor='top',
+            y=-0.3,
+            xanchor='center',
+            x=0.5
+        ),
+        margin=dict(b=120),
+        height=600,
+        width=900
+    )
 
 else:
-    st.warning("Целевата стойност Esr/Ei не е в обхвата на данните.")
-
-fig.update_layout(
-    xaxis=dict(title='H/D'),
-    yaxis=dict(
-        title='y (Първа ос)',
-        titlefont=dict(color='blue'),
-        tickfont=dict(color='blue'),
-        side='left',
-        anchor='x'
-    ),
-    yaxis2=dict(
-        title='y (Втора ос)',
-        titlefont=dict(color='orange'),
-        tickfont=dict(color='orange'),
-        overlaying='y',
-        side='right',
-        anchor='x',
-        showgrid=False
-    ),
-    legend=dict(
-        orientation='h',
-        yanchor='top',
-        y=-0.3,
-        xanchor='center',
-        x=0.5
-    ),
-    margin=dict(b=150),
-    height=600,
-    width=900
-)
+    st.warning("Не е намерен подходящ интервал за интерполация на Esr/Ei.")
 
 st.plotly_chart(fig, use_container_width=True)
