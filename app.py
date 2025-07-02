@@ -34,10 +34,10 @@ if 'Ei/Ed' in df_original.columns:
             mode='lines',
             name=f'Ei/Ed = {level}',
             line=dict(width=2),
-            xaxis='x'  # основната ос
+            xaxis='x'
         ))
 
-# 2. Изолинии от новите данни (σsr/Ei), спрямо H/D
+# 2. Нови изолинии по H/D
 if 'sr_Ei' in df_new.columns:
     unique_sr_Ei = sorted(df_new['sr_Ei'].unique())
     for sr_Ei in unique_sr_Ei:
@@ -49,31 +49,29 @@ if 'sr_Ei' in df_new.columns:
             mode='lines',
             name=f'σsr/Ei = {sr_Ei}',
             line=dict(width=2, dash='dot'),
-            xaxis='x'  # основна ос
+            xaxis='x'
         ))
 
-# 3. Криви спрямо σr = H/D / 2 → изобразени върху xaxis2
-if 'sr_Ei' in df_new.columns:
-    for sr_Ei in unique_sr_Ei:
-        df_level = df_new[df_new['sr_Ei'] == sr_Ei].sort_values(by='H/D')
-        df_level = df_level.dropna(subset=['H/D', 'y'])
-        sigma_r = df_level['H/D'] / 2  # нова стойност по σr
+# 3. Същите линии, но с x = σr = H/D / 2 (по xaxis2)
+for sr_Ei in unique_sr_Ei:
+    df_level = df_new[df_new['sr_Ei'] == sr_Ei].sort_values(by='H/D')
+    df_level = df_level.dropna(subset=['H/D', 'y'])
+    sigma_r = df_level['H/D'] / 2
 
-        fig.add_trace(go.Scatter(
-            x=sigma_r,
-            y=df_level['y'],
-            mode='lines',
-            name=f'σr = {sr_Ei} (горна ос)',
-            line=dict(width=1, dash='dash'),
-            xaxis='x2'  # вързано към горната ос
-        ))
+    fig.add_trace(go.Scatter(
+        x=sigma_r,
+        y=df_level['y'],
+        mode='lines',
+        name=f'σr = {sr_Ei} (горна ос)',
+        line=dict(width=1, dash='dash'),
+        xaxis='x2'
+    ))
 
-# Настройки на графиката
+# Настройки на графиката с корекция на legend.title
 fig.update_layout(
     width=800,
     height=700,
 
-    # Основна долна ос H/D
     xaxis=dict(
         title='H/D',
         range=[0, 2],
@@ -81,7 +79,6 @@ fig.update_layout(
         domain=[0, 1]
     ),
 
-    # Горна ос σr (xaxis2) със стойности от 0 до 1
     xaxis2=dict(
         title='σr',
         range=[0, 1],
@@ -95,7 +92,6 @@ fig.update_layout(
         tickfont=dict(size=12)
     ),
 
-    # Вертикална ос
     yaxis=dict(
         title='y',
         range=[0, 2.5],
@@ -105,7 +101,10 @@ fig.update_layout(
     ),
 
     title='Комбинирани изолинии с H/D и σr',
-    legend=dict(title='Легенда', font=dict(size=10))
+    legend=dict(
+        title=dict(text='Легенда'),
+        font=dict(size=10)
+    )
 )
 
 # Показване на графиката
