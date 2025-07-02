@@ -154,11 +154,6 @@ if lower_index is not None:
     perp_vec = np.array([-vec[1], vec[0]])
     perp_vec = perp_vec / np.linalg.norm(perp_vec)
 
-    # Дължина за перпендикулярната линия (но тя се маха, няма да добавим тази линия)
-    # line_length = np.linalg.norm(vec) * 1.5
-    # line_start = interp_point - perp_vec * line_length/2
-    # line_end = interp_point + perp_vec * line_length/2
-
     # Добавяне на интерполирана точка
     fig.add_trace(go.Scatter(
         x=[interp_point[0]],
@@ -178,7 +173,6 @@ if lower_index is not None:
     ))
 
     # Намиране на най-близкото Ei/Ed за хоризонтална линия
-    # Тук вземаме най-близкото ниво от df_original, за да чертаем хоризонталната линия
     closest_Ei_Ed = min(unique_Ei_Ed, key=lambda x: abs(x - En_over_Ed))
 
     df_closest = df_original[df_original['Ei/Ed'] == closest_Ei_Ed].sort_values(by='H/D')
@@ -200,7 +194,47 @@ if lower_index is not None:
     y_on_closest_curve = interp_y_at_x(x_arr_closest, y_arr_closest, interp_point[0])
 
     # Добавяне на хоризонтална линия от интерполираната точка до кривата от df_original
-   
+    fig.add_trace(go.Scatter(
+        x=[interp_point[0], interp_point[0]],
+        y=[interp_point[1], y_on_closest_curve],
+        mode='lines',
+        line=dict(color='green', dash='dot'),
+        name='Хоризонтална линия до кривата'
+    ))
+
+# ---- Тук добавяме динамичната точка ----
+
+# Вземаме най-близкото Ei/Ed към En_over_Ed за точка 1
+closest_Ei_Ed_for_point = min(unique_Ei_Ed, key=lambda x: abs(x - En_over_Ed))
+df_closest_for_point = df_original[df_original['Ei/Ed'] == closest_Ei_Ed_for_point].sort_values(by='H/D')
+
+# Първа точка x от тази крива
+x_first_point = df_closest_for_point['H/D'].values[0]
+
+# Интерполация y за x_first_point по крива, близка до En_over_Ed
+closest_curve = min(unique_Ei_Ed, key=lambda x: abs(x - En_over_Ed))
+df_curve = df_original[df_original['Ei/Ed'] == closest_curve].sort_values(by='H/D')
+x_arr_curve = df_curve['H/D'].values
+y_arr_curve = df_curve['y'].values
+
+def interp_y(x_arr, y_arr, x0):
+    for j in range(len(x_arr) - 1):
+        if x_arr[j] <= x0 <= x_arr[j + 1]:
+            return y_arr[j] + (y_arr[j + 1] - y_arr[j]) * (x0 - x_arr[j]) / (x_arr[j + 1] - x_arr[j])
+    if x0 < x_arr[0]:
+        return y_arr[0]
+    return y_arr[-1]
+
+y_interpolated = interp_y(x_arr_curve, y_arr_curve, x_first_point)
+
+# Добавяне на динамичната точка на графиката
+fig.add_trace(go.Scatter(
+    x=[x_first_point],
+    y=[y_interpolated],
+    mode='markers',
+    marker=dict(color='purple', size=12, symbol='diamond'),
+    name='Динамична точка'
+))
 
 fig.update_layout(
     xaxis_title="H / D",
