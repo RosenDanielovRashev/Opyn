@@ -8,7 +8,7 @@ st.title("Комбинирани изолинии")
 df_original = pd.read_csv("danni.csv")
 
 # Зареждане на новите данни
-df_new = pd.read_csv("Оразмеряване на опън за междинен плстH_D.csv")
+df_new = pd.read_csv("Оразмеряване на опън за междиннен плстH_D.csv")
 df_new.rename(columns={'Esr/Ei': 'sr_Ei'}, inplace=True)
 
 # Създаване на фигура
