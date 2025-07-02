@@ -63,6 +63,16 @@ Ed = st.number_input(
     step=0.1
 )
 
+# Нов параметър h4
+h4 = st.number_input(
+    "h₄",
+    value=0.0,
+    step=0.1
+)
+
+H4 = sum_h + h4
+st.write(f"H₄ = H + h₄ = {sum_h:.3f} + {h4:.3f} = {H4:.3f}")
+
 if Ei_alt is not None and Ei_alt != 0:
     E_values_alt = E_values + [Ei_alt]
     h_values_alt = h_values + [0]  # дебелина 0 за алтернативния пласт
