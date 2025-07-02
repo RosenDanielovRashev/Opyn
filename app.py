@@ -14,7 +14,7 @@ def to_subscript(number):
 st.header("Изчисление на Esr")
 
 # Вход: брой пластове
-n = st.number_input("Брой пластове (n)", min_value=1, step=1, value=3)
+n = st.number_input("Брой пластове (n)", min_value=2, step=1, value=3)
 
 h_values = []
 E_values = []
@@ -33,47 +33,43 @@ for i in range(n):
 h_array = np.array(h_values)
 E_array = np.array(E_values)
 
-sum_h = h_array.sum()
-weighted_sum = np.sum(E_array * h_array)
+# Изчисление само за пластове от 1 до n-1 (Python 0..n-2)
+sum_h = h_array[:-1].sum()
+weighted_sum = np.sum(E_array[:-1] * h_array[:-1])
 Esr = weighted_sum / sum_h if sum_h != 0 else 0
 
 # Формула Esr - LaTeX
-st.latex(r"Esr = \frac{\sum_{i=1}^{n} (E_i \cdot h_i)}{\sum_{i=1}^{n} h_i}")
+st.latex(r"Esr = \frac{\sum_{i=1}^{n-1} (E_i \cdot h_i)}{\sum_{i=1}^{n-1} h_i}")
 
-numerator = " + ".join([f"{E_values[i]} \cdot {h_values[i]}" for i in range(n)])
-denominator = " + ".join([f"{h_values[i]}" for i in range(n)])
+numerator = " + ".join([f"{E_values[i]} \cdot {h_values[i]}" for i in range(n-1)])
+denominator = " + ".join([f"{h_values[i]}" for i in range(n-1)])
 formula_with_values = rf"Esr = \frac{{{numerator}}}{{{denominator}}} = \frac{{{weighted_sum}}}{{{sum_h}}} = {Esr:.3f}"
 st.latex(formula_with_values)
 
-st.latex(r"H = \sum_{i=1}^{n} h_i")
+# Обща дебелина до n-1 пластове
+st.latex(r"H = \sum_{i=1}^{n-1} h_i")
 st.write(f"Обща дебелина H = {sum_h:.3f}")
 st.write(f"Изчислено Esr = {Esr:.3f}")
 
-# Вход за h_{n+1}
-h_next = st.number_input(
-    f"h{to_subscript(n+1)}",
-    value=0.0,
-    step=0.1
-)
+# Последният пласт (n-ти)
+h_next = h_array[-1]
+st.write(f"h{to_subscript(n)} = {h_next:.3f}")
 
-H_next = sum_h + h_next
-st.write(f"H{to_subscript(n+1)} = H + h{to_subscript(n+1)} = {sum_h:.3f} + {h_next:.3f} = {H_next:.3f}")
-
-# Вход за Ed (числово поле, първоначална стойност 100)
+# Ed - числово поле, първоначална стойност 100
 Ed = st.number_input(
     "Ed",
     value=100.0,
     step=0.1
 )
 
-# Вход за E (алтернативна стойност, индекс n+1)
+# Алтернативна стойност Eₙ
 Ei_alt = st.number_input(
-    f"E (алтернативна стойност, E{to_subscript(n+1)})",
+    f"E (алтернативна стойност, E{to_subscript(n)})",
     value=1000.0,
     step=0.1
 )
 
-# Входен параметър D с падащо меню
+# Параметър D с падащо меню
 D = st.selectbox("Избери D", options=[34.0, 32.04], index=0)
 
 # Зареждане на данни за диаграмата
