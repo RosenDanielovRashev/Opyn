@@ -70,7 +70,7 @@ if 'Ei/Ed' in df_original.columns:
             mode='lines',
             name=f'Ei/Ed = {level}',
             line=dict(width=2),
-            xaxis='x'  # основна ос
+            xaxis='x'
         ))
 
 if 'sr_Ei' in df_new.columns:
@@ -83,18 +83,18 @@ if 'sr_Ei' in df_new.columns:
             mode='lines',
             name=f'Esr/Ei = {sr_Ei}',
             line=dict(width=2),
-            xaxis='x'  # пак основна ос
+            xaxis='x'
         ))
 
-# Добавяме празен trace за да задействаме втората ос
+# Празен trace за втората ос
 fig.add_trace(go.Scatter(
-    x=[0,1],
-    y=[0,0],  # например
+    x=[0, 1],
+    y=[0, 0],
     mode='lines',
     line=dict(color='rgba(0,0,0,0)'),
     showlegend=False,
     hoverinfo='skip',
-    xaxis='x2'  # Този trace използва втората ос
+    xaxis='x2'
 ))
 
 fig.update_layout(
@@ -110,7 +110,7 @@ fig.update_layout(
         tickangle=0
     ),
     xaxis2=dict(
-        title=r'$\sigma_n$',
+        title='σₙ',
         overlaying='x',
         side='top',
         range=[0, 1],
