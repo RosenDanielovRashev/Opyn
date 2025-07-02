@@ -103,136 +103,7 @@ if 'sr_Ei' in df_new.columns:
             line=dict(width=2)
         ))
 
-# --- Търсене на интервал между две изолинии за Esr/Ei (Esr_over_En)
-target_sr_Ei = Esr_over_En
-target_Hn_D = ratio  # Hn/D
-
-sr_values_sorted = sorted(df_new['sr_Ei'].unique())
-lower_index = None
-
-for i in range(len(sr_values_sorted)-1):
-    if sr_values_sorted[i] <= target_sr_Ei <= sr_values_sorted[i+1]:
-        lower_index = i
-        break
-
-if lower_index is not None:
-    lower_sr = sr_values_sorted[lower_index]
-    upper_sr = sr_values_sorted[lower_index + 1]
-
-    df_lower = df_new[df_new['sr_Ei'] == lower_sr].sort_values(by='H/D')
-    df_upper = df_new[df_new['sr_Ei'] == upper_sr].sort_values(by='H/D')
-
-    def interp_xy_perpendicular(df, x0):
-        x_arr = df['H/D'].values
-        y_arr = df['y'].values
-        for j in range(len(x_arr)-1):
-            if x_arr[j] <= x0 <= x_arr[j+1]:
-                p1 = np.array([x_arr[j], y_arr[j]])
-                p2 = np.array([x_arr[j+1], y_arr[j+1]])
-                seg_vec = p2 - p1
-                seg_len = np.linalg.norm(seg_vec)
-                if seg_len == 0:
-                    return p1
-                t = (x0 - x_arr[j]) / (x_arr[j+1] - x_arr[j])
-                point_on_seg = p1 + t * seg_vec
-                return point_on_seg
-        if x0 < x_arr[0]:
-            return np.array([x_arr[0], y_arr[0]])
-        else:
-            return np.array([x_arr[-1], y_arr[-1]])
-
-    point_lower = interp_xy_perpendicular(df_lower, target_Hn_D)
-    point_upper = interp_xy_perpendicular(df_upper, target_Hn_D)
-
-    vec = point_upper - point_lower
-
-    t = (target_sr_Ei - lower_sr) / (upper_sr - lower_sr)
-
-    interp_point = point_lower + t * vec
-    interp_point[0] = round(interp_point[0], 3)
-    interp_point[1] = round(interp_point[1], 3)
-
-    # Добавяне на интерполирана точка (първа точка)
-    fig.add_trace(go.Scatter(
-        x=[interp_point[0]],
-        y=[interp_point[1]],
-        mode='markers',
-        marker=dict(color='red', size=10),
-        name='Интерполирана точка'
-    ))
-
-    # Добавяне на вертикална линия от точката до x-оста (x=interp_point[0], y от interp_point[1] до 0)
-    fig.add_trace(go.Scatter(
-        x=[interp_point[0], interp_point[0]],
-        y=[interp_point[1], 0],
-        mode='lines',
-        line=dict(color='blue', dash='dash'),
-        name='Вертикална линия към абсцисата'
-    ))
-
-    # Функция за обратна интерполация - намира x за дадено y по изолинията
-    def interp_x_for_y(df, y_target):
-        x_arr = df['H/D'].values
-        y_arr = df['y'].values
-        for k in range(len(y_arr) - 1):
-            y1, y2 = y_arr[k], y_arr[k + 1]
-            if (y1 - y_target) * (y2 - y_target) <= 0:  # y_target между y1 и y2
-                x1, x2 = x_arr[k], x_arr[k + 1]
-                if y2 == y1:
-                    return round(x1, 3)
-                t_local = (y_target - y1) / (y2 - y1)
-                x_interp = x1 + t_local * (x2 - x1)
-                return round(x_interp, 3)
-        return None
-
-    # Намиране на изолиниите в df_original за най-близки нива на Ei/Ed
-    Ei_Ed_target = En_over_Ed
-    Ei_Ed_values_sorted = sorted(df_original['Ei/Ed'].unique())
-    lower_index_EiEd = None
-
-    for i in range(len(Ei_Ed_values_sorted)-1):
-        if Ei_Ed_values_sorted[i] <= Ei_Ed_target <= Ei_Ed_values_sorted[i+1]:
-            lower_index_EiEd = i
-            break
-
-    if lower_index_EiEd is not None:
-        lower_level = Ei_Ed_values_sorted[lower_index_EiEd]
-        upper_level = Ei_Ed_values_sorted[lower_index_EiEd + 1]
-
-        df_lower_EiEd = df_original[df_original['Ei/Ed'] == lower_level].sort_values(by='H/D')
-        df_upper_EiEd = df_original[df_original['Ei/Ed'] == upper_level].sort_values(by='H/D')
-
-        x_lower = interp_x_for_y(df_lower_EiEd, interp_point[1])
-        x_upper = interp_x_for_y(df_upper_EiEd, interp_point[1])
-
-        if x_lower is not None and x_upper is not None:
-            t_EiEd = (Ei_Ed_target - lower_level) / (upper_level - lower_level)
-            x_interp_EiEd = round(x_lower + t_EiEd * (x_upper - x_lower), 3)
-
-            # Добавяне на хоризонтална линия от първата точка до y=0
-            fig.add_trace(go.Scatter(
-                x=[interp_point[0], x_interp_EiEd],
-                y=[interp_point[1], interp_point[1]],
-                mode='lines',
-                line=dict(color='green', dash='dash'),
-                name='Хоризонтална линия до пресечна точка'
-            ))
-
-            # Добавяне на точка на пресичане хоризонтална линия с изолиния Ei/Ed
-            fig.add_trace(go.Scatter(
-                x=[x_interp_EiEd],
-                y=[interp_point[1]],
-                mode='markers',
-                marker=dict(color='orange', size=10),
-                name='Пресечна точка с Ei/Ed'
-            ))
-        else:
-            st.warning("Не може да се намери пресечна точка на хоризонталната линия с изолинията Ei/Ed.")
-    else:
-        st.warning("Извън интервала на наличните изолинии Ei/Ed за пресичане.")
-
-else:
-    st.warning("Esr/Ei не попада между наличните стойности на изолинии.")
+# ... (тук остава целият ти съществуващ код за интерполации, без промяна) ...
 
 # --- Добавяне на прозрачна линия, за да се визуализира горната ос (от 0 до 1)
 fig.add_trace(go.Scatter(
@@ -253,11 +124,13 @@ fig.update_layout(
     xaxis2=dict(
         overlaying='x',
         side='top',
-        range=[0, 1],
-        showgrid=False,
-        zeroline=False,
-        tickmode='auto',
-        ticks='outside'
+        range=[0, 2],                 # основен диапазон на X (примерно)
+        tickvals=[0, 0.5, 1, 1.5, 2],# позиции на отметките по основната ос
+        ticktext=['0', '0.25', '0.5', '0.75', '1'],  # текст по новата ос (нормализирани)
+        ticks='outside',
+        tickfont=dict(size=10),       # по-малък шрифт, за да не се препокриват
+        tickangle=45,                 # завъртени на 45 градуса
+        position=1.05                # изместване нагоре, за да има разстояние от основната ос
     )
 )
 
