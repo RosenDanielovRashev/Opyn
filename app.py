@@ -170,13 +170,12 @@ if lower_index is not None:
         name='Вертикална линия към абсцисата'
     ))
 
-    # Функция за обратна интерполация - намира x за дадено y по изолинията
     def interp_x_for_y(df, y_target):
         x_arr = df['H/D'].values
         y_arr = df['y'].values
         for k in range(len(y_arr) - 1):
             y1, y2 = y_arr[k], y_arr[k + 1]
-            if (y1 - y_target) * (y2 - y_target) <= 0:  # y_target между y1 и y2
+            if (y1 - y_target) * (y2 - y_target) <= 0:
                 x1, x2 = x_arr[k], x_arr[k + 1]
                 if y2 == y1:
                     return round(x1, 3)
@@ -185,70 +184,39 @@ if lower_index is not None:
                 return round(x_interp, 3)
         return None
 
-    # Намиране на изолиниите в df_original за най-близки нива на Ei/Ed
-    Ei_Ed_target = En_over_Ed
-    Ei_Ed_values_sorted = sorted(df_original['Ei/Ed'].unique())
-    lower_index_EiEd = None
+    x_at_y_zero_lower = interp_x_for_y(df_lower, 0)
+    x_at_y_zero_upper = interp_x_for_y(df_upper, 0)
 
-    for i in range(len(Ei_Ed_values_sorted)-1):
-        if Ei_Ed_values_sorted[i] <= Ei_Ed_target <= Ei_Ed_values_sorted[i+1]:
-            lower_index_EiEd = i
-            break
+    if x_at_y_zero_lower is not None and x_at_y_zero_upper is not None:
+        x_on_xaxis = x_at_y_zero_lower + t * (x_at_y_zero_upper - x_at_y_zero_lower)
+        x_on_xaxis = round(x_on_xaxis, 3)
+        # Вертикална линия от interp_point[0], interp_point[1] до interp_point[0], 0 е вече добавена горе
 
-    if lower_index_EiEd is not None:
-        lower_level = Ei_Ed_values_sorted[lower_index_EiEd]
-        upper_level = Ei_Ed_values_sorted[lower_index_EiEd + 1]
-
-        df_lower_EiEd = df_original[df_original['Ei/Ed'] == lower_level].sort_values(by='H/D')
-        df_upper_EiEd = df_original[df_original['Ei/Ed'] == upper_level].sort_values(by='H/D')
-
-        x_lower = interp_x_for_y(df_lower_EiEd, interp_point[1])
-        x_upper = interp_x_for_y(df_upper_EiEd, interp_point[1])
-
-        if x_lower is not None and x_upper is not None:
-            t_EiEd = (Ei_Ed_target - lower_level) / (upper_level - lower_level)
-            x_interp_EiEd = round(x_lower + t_EiEd * (x_upper - x_lower), 3)
-
-            # Добавяне на хоризонтална линия от първата точка до y=interp_point[1]
-            fig.add_trace(go.Scatter(
-                x=[interp_point[0], x_interp_EiEd],
-                y=[interp_point[1], interp_point[1]],
-                mode='lines',
-                line=dict(color='orange', dash='dot'),
-                name='Хоризонтална линия към втора ос',
-                yaxis='y2'  # Втора ос
-            ))
-
-            # Добавяне на точка на вторичната ос
-            fig.add_trace(go.Scatter(
-                x=[x_interp_EiEd],
-                y=[interp_point[1]],
-                mode='markers',
-                marker=dict(color='orange', size=10),
-                name='Точка на втората ос',
-                yaxis='y2'
-            ))
+else:
+    st.warning("Целевата стойност Esr/Ei не е в обхвата на данните.")
 
 fig.update_layout(
     xaxis=dict(title='H/D'),
     yaxis=dict(
-        title='y (ос 1)',
+        title='y (Първа ос)',
         titlefont=dict(color='blue'),
         tickfont=dict(color='blue'),
-        side='left'
+        side='left',
+        anchor='x'
     ),
     yaxis2=dict(
-        title='y (ос 2)',
+        title='y (Втора ос)',
         titlefont=dict(color='orange'),
         tickfont=dict(color='orange'),
         overlaying='y',
         side='right',
+        anchor='x',
         showgrid=False
     ),
     legend=dict(
         orientation='h',
         yanchor='top',
-        y=-0.25,
+        y=-0.3,
         xanchor='center',
         x=0.5
     ),
