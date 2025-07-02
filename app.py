@@ -161,7 +161,7 @@ if lower_index is not None:
         name='Интерполирана точка'
     ))
 
-    # Добавяне на вертикална линия от точката до абсцисата (x=interp_point[0], y от interp_point[1] до 0)
+    # Добавяне на вертикална линия от точката до x-оста (x=interp_point[0], y от interp_point[1] до 0)
     fig.add_trace(go.Scatter(
         x=[interp_point[0], interp_point[0]],
         y=[interp_point[1], 0],
@@ -206,39 +206,39 @@ if lower_index is not None:
         x_upper = interp_x_for_y(df_upper_EiEd, interp_point[1])
 
         if x_lower is not None and x_upper is not None:
-            t2 = (Ei_Ed_target - lower_level) / (upper_level - lower_level)
-            x_interp_final = x_lower + t2 * (x_upper - x_lower)
-            x_interp_final = round(x_interp_final, 3)
+            t_EiEd = (Ei_Ed_target - lower_level) / (upper_level - lower_level)
+            x_interp_EiEd = round(x_lower + t_EiEd * (x_upper - x_lower), 3)
 
-            # Добавяне на втора интерполирана точка (на втората ос)
+            # Добавяне на хоризонтална линия от първата точка до y=interp_point[1]
             fig.add_trace(go.Scatter(
-                x=[x_interp_final],
+                x=[interp_point[0], x_interp_EiEd],
+                y=[interp_point[1], interp_point[1]],
+                mode='lines',
+                line=dict(color='orange', dash='dot'),
+                name='Хоризонтална линия към втора ос',
+                yaxis='y2'  # Втора ос
+            ))
+
+            # Добавяне на точка на вторичната ос
+            fig.add_trace(go.Scatter(
+                x=[x_interp_EiEd],
                 y=[interp_point[1]],
                 mode='markers',
                 marker=dict(color='orange', size=10),
-                name='Втора интерполирана точка'
+                name='Точка на втората ос',
+                yaxis='y2'
             ))
 
-            # Добавяне на вертикална линия от оранжевата точка (x_interp_final, interp_point[1]) до абсцисата (y=0)
-            fig.add_trace(go.Scatter(
-                x=[x_interp_final, x_interp_final],
-                y=[interp_point[1], 0],
-                mode='lines',
-                line=dict(color='orange', width=3),
-                name='Вертикална линия (оранжева)'
-            ))
-
-# --- Настройка на двете y-оси и легенда под графиката
 fig.update_layout(
     xaxis=dict(title='H/D'),
     yaxis=dict(
-        title='y',
+        title='y (ос 1)',
         titlefont=dict(color='blue'),
         tickfont=dict(color='blue'),
         side='left'
     ),
     yaxis2=dict(
-        title='Втора ос',
+        title='y (ос 2)',
         titlefont=dict(color='orange'),
         tickfont=dict(color='orange'),
         overlaying='y',
@@ -246,18 +246,15 @@ fig.update_layout(
         showgrid=False
     ),
     legend=dict(
-        orientation="h",
-        yanchor="top",
-        y=-0.3,
-        xanchor="center",
-        x=0.5,
-        bgcolor='rgba(255,255,255,0.8)',
-        bordercolor='black',
-        borderwidth=1
+        orientation='h',
+        yanchor='top',
+        y=-0.25,
+        xanchor='center',
+        x=0.5
     ),
     margin=dict(b=150),
     height=600,
     width=900
 )
 
-st.plotly_chart(fig)
+st.plotly_chart(fig, use_container_width=True)
