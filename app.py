@@ -66,7 +66,7 @@ En_over_Ed = En / Ed if Ed != 0 else 0
 st.latex(r"\frac{E_{" + str(n) + r"}}{E_d} = \frac{" + f"{En:.3f}" + "}{" + f"{Ed:.3f}" + "} = " + f"{En_over_Ed:.3f}")
 
 df_original = pd.read_csv("danni.csv")
-df_new = pd.read_csv("\u041e\u0440\u0430\u0437\u043c\u0435\u0440\u044f\u0432\u0430\u043d\u0435 \u043d\u0430 \u043e\u043f\u044a\u043d \u0437\u0430 \u043c\u0435\u0436\u0434\u0438\u043d\u0435\u043d \u043f\u043b\u0441\u0442H_D.csv")
+df_new = pd.read_csv("Оразмеряване на опън за междиннен плстH_D.csv")
 df_new.rename(columns={'Esr/Ei': 'sr_Ei'}, inplace=True)
 
 fig = go.Figure()
