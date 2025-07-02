@@ -16,22 +16,19 @@ E_values = []
 
 st.markdown("### Въведи стойности за всеки пласт")
 
+# Функция за преобразуване на цифра в долен индекс (пример: 3 → ₃)
+def to_subscript(number):
+    subscripts = str.maketrans("0123456789", "₀₁₂₃₄₅₆₇₈₉")
+    return str(number).translate(subscripts)
+
 cols = st.columns(2)
 for i in range(n):
     with cols[0]:
-        h = st.number_input(f"h_{i+1}", value=1.0, step=0.1, key=f"h_{i}")
+        h = st.number_input(f"h{to_subscript(i+1)}", value=1.0, step=0.1, key=f"h_{i}")
         h_values.append(h)
     with cols[1]:
-        E = st.number_input(f"E_{i+1}", value=1.0, step=0.1, key=f"E_{i}")
+        E = st.number_input(f"E{to_subscript(i+1)}", value=1.0, step=0.1, key=f"E_{i}")
         E_values.append(E)
-
-# Отделно въвеждане за Ei на последния пласт (ако искаш да го зададеш различно)
-Ei_last = st.number_input(f"E (последен пласт, E_{n}) - алтернативна стойност", value=None, step=0.1)
-
-# Ако е зададено Ei_last, замени последния Ei с него
-if Ei_last is not None and Ei_last != 0:
-    if len(E_values) == n:
-        E_values[-1] = Ei_last
 
 # Изчисляване на Esr и H
 h_array = np.array(h_values)
@@ -47,6 +44,16 @@ st.latex(r"H = \sum_{i=1}^{n} h_i")
 # Показване на резултатите
 st.write(f"Обща дебелина H = {sum_h:.3f}")
 st.write(f"Изчислено Esr = {Esr:.3f}")
+
+# Отделно въвеждане за Ei на последния пласт (под изчисленото Esr)
+Ei_last = st.number_input(f"E (последен пласт, E{to_subscript(n)}) - алтернативна стойност", value=None, step=0.1)
+
+# Ако е зададено Ei_last, замени последния Ei с него и обнови изчислението и показването
+if Ei_last is not None and Ei_last != 0:
+    E_values[-1] = Ei_last
+    E_array = np.array(E_values)
+    Esr = np.sum(E_array * h_array) / sum_h if sum_h != 0 else 0
+    st.write(f"Обновено Esr с алтернативен E{to_subscript(n)} = {Esr:.3f}")
 
 # --- Номограма (графика) долу ---
 
@@ -127,4 +134,3 @@ fig.update_layout(
 )
 
 st.plotly_chart(fig, use_container_width=False)
-
