@@ -238,7 +238,7 @@ fig.update_layout(
     xaxis_title='H/D',
     yaxis_title='y',
     title='Изолинии с интерполации',
-    legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
+    showlegend=False  # махаме легендата
 )
 
 st.plotly_chart(fig, use_container_width=True)
