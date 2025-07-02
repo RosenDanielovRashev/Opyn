@@ -25,7 +25,7 @@ if 'Ei/Ed' in df_original.columns:
             mode='lines',
             name=f'Ei/Ed = {level}',
             line=dict(width=2)
-        ))
+        )
 
 # 2. Добавяне на новите изолинии за sr_Ei
 if 'sr_Ei' in df_new.columns:
@@ -40,7 +40,21 @@ if 'sr_Ei' in df_new.columns:
             line=dict(width=2)
         ))
 
-# Настройки на графиката (както в оригиналния код)
+# Добавяне на втора x-ос (горна ос)
+fig.update_layout(
+    xaxis2=dict(
+        title='Нова ос',
+        overlaying='x',
+        side='top',
+        range=[0, 1],  # от 0 до 1
+        anchor='free',
+        position=1.0,  # позиция върху графиката
+        matches='x',   # синхронизиране с основната x-ос
+        showgrid=False
+    )
+)
+
+# Настройки на графиката
 fig.update_layout(
     width=700,
     height=700,
