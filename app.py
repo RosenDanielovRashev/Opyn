@@ -29,10 +29,12 @@ for i in range(n):
 h_array = np.array(h_values)
 E_array = np.array(E_values)
 
+# Изчисляване на Esr за първите n-1 пласта
 sum_h_n_1 = h_array[:-1].sum()
 weighted_sum_n_1 = np.sum(E_array[:-1] * h_array[:-1])
 Esr = weighted_sum_n_1 / sum_h_n_1 if sum_h_n_1 != 0 else 0
 
+# Изчисляване на H_n и H_{n-1}
 H_n = h_array.sum()
 H_n_1 = sum_h_n_1
 
@@ -101,8 +103,9 @@ if 'sr_Ei' in df_new.columns:
             line=dict(width=2)
         ))
 
+# --- Търсене на интервал между две изолинии за Esr/Ei (Esr_over_En)
 target_sr_Ei = Esr_over_En
-target_Hn_D = ratio
+target_Hn_D = ratio  # Hn/D
 
 sr_values_sorted = sorted(df_new['sr_Ei'].unique())
 lower_index = None
@@ -149,6 +152,7 @@ if lower_index is not None:
     interp_point[0] = round(interp_point[0], 3)
     interp_point[1] = round(interp_point[1], 3)
 
+    # Добавяне на интерполирана точка (първа точка)
     fig.add_trace(go.Scatter(
         x=[interp_point[0]],
         y=[interp_point[1]],
@@ -157,12 +161,22 @@ if lower_index is not None:
         name='Интерполирана точка'
     ))
 
+    # Добавяне на вертикална линия от точката до абсцисата (x=interp_point[0], y от interp_point[1] до 0)
+    fig.add_trace(go.Scatter(
+        x=[interp_point[0], interp_point[0]],
+        y=[interp_point[1], 0],
+        mode='lines',
+        line=dict(color='blue', dash='dash'),
+        name='Вертикална линия към абсцисата'
+    ))
+
+    # Функция за обратна интерполация - намира x за дадено y по изолинията
     def interp_x_for_y(df, y_target):
         x_arr = df['H/D'].values
         y_arr = df['y'].values
         for k in range(len(y_arr) - 1):
             y1, y2 = y_arr[k], y_arr[k + 1]
-            if (y1 - y_target) * (y2 - y_target) <= 0:
+            if (y1 - y_target) * (y2 - y_target) <= 0:  # y_target между y1 и y2
                 x1, x2 = x_arr[k], x_arr[k + 1]
                 if y2 == y1:
                     return round(x1, 3)
@@ -171,6 +185,7 @@ if lower_index is not None:
                 return round(x_interp, 3)
         return None
 
+    # Намиране на изолиниите в df_original за най-близки нива на Ei/Ed
     Ei_Ed_target = En_over_Ed
     Ei_Ed_values_sorted = sorted(df_original['Ei/Ed'].unique())
     lower_index_EiEd = None
@@ -191,49 +206,45 @@ if lower_index is not None:
         x_upper = interp_x_for_y(df_upper_EiEd, interp_point[1])
 
         if x_lower is not None and x_upper is not None:
-            t_EiEd = (Ei_Ed_target - lower_level) / (upper_level - lower_level)
-            x_interp_EiEd = round(x_lower + t_EiEd * (x_upper - x_lower), 3)
+            t2 = (Ei_Ed_target - lower_level) / (upper_level - lower_level)
+            x_interp_final = x_lower + t2 * (x_upper - x_lower)
+            x_interp_final = round(x_interp_final, 3)
 
+            # Добавяне на втора интерполирана точка (на втората ос)
             fig.add_trace(go.Scatter(
-                x=[interp_point[0], x_interp_EiEd],
-                y=[interp_point[1], interp_point[1]],
-                mode='lines',
-                line=dict(color='green', dash='dash'),
-                name='Хоризонтална линия до пресечна точка'
-            ))
-
-            fig.add_trace(go.Scatter(
-                x=[x_interp_EiEd],
+                x=[x_interp_final],
                 y=[interp_point[1]],
                 mode='markers',
                 marker=dict(color='orange', size=10),
-                name='Пресечна точка с Ei/Ed'
+                name='Втора интерполирана точка'
             ))
 
-            # Определяме максимума на x-оста от данните, ако няма зададен range
-            x_max_data = max(df_original['H/D'].max(), df_new['H/D'].max())
-            x_max = x_max_data * 1.05
-
-            # Вертикална линия от оранжевата точка до x_max на ос 2
+            # Добавяне на вертикална линия от оранжевата точка (x_interp_final, interp_point[1]) до абсцисата (y=0)
             fig.add_trace(go.Scatter(
-                x=[x_interp_EiEd, x_max],
-                y=[interp_point[1], interp_point[1]],
+                x=[x_interp_final, x_interp_final],
+                y=[interp_point[1], 0],
                 mode='lines',
-                line=dict(color='orange', dash='dot'),
-                name='Вертикална линия към ос 2'
+                line=dict(color='orange', width=3),
+                name='Вертикална линия (оранжева)'
             ))
 
-        else:
-            st.warning("Не може да се намери пресечна точка на хоризонталната линия с изолинията Ei/Ed.")
-    else:
-        st.warning("Извън интервала на наличните изолинии Ei/Ed за пресичане.")
-else:
-    st.warning("Esr/Ei не попада между наличните стойности на изолинии.")
-
+# --- Настройка на двете y-оси и легенда под графиката
 fig.update_layout(
-    xaxis_title='H/D',
-    yaxis_title='y',
-    title='Изолинии с интерполации',
+    xaxis=dict(title='H/D'),
+    yaxis=dict(
+        title='y',
+        titlefont=dict(color='blue'),
+        tickfont=dict(color='blue'),
+        side='left'
+    ),
+    yaxis2=dict(
+        title='Втора ос',
+        titlefont=dict(color='orange'),
+        tickfont=dict(color='orange'),
+        overlaying='y',
+        side='right',
+        showgrid=False
+    ),
     legend=dict(
         orientation="h",
         yanchor="top",
@@ -245,7 +256,8 @@ fig.update_layout(
         borderwidth=1
     ),
     margin=dict(b=150),
-    xaxis=dict(range=[0, max(df_original['H/D'].max(), df_new['H/D'].max()) * 1.05])
+    height=600,
+    width=900
 )
 
-st.plotly_chart(fig, use_container_width=True)
+st.plotly_chart(fig)
