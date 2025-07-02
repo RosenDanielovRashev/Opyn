@@ -226,38 +226,44 @@ if lower_index is not None:
                 marker=dict(color='orange', size=10),
                 name='Пресечна точка с Ei/Ed'
             ))
-        else:
-            st.warning("Не може да се намери пресечна точка на хоризонталната линия с изолинията Ei/Ed.")
-    else:
-        st.warning("Извън интервала на наличните изолинии Ei/Ed за пресичане.")
 
-else:
-    st.warning("Esr/Ei не попада между наличните стойности на изолинии.")
+            # --- Тук добавяме вертикална линия от оранжевата точка нагоре до горната ос x2
+            y_max = fig.layout.yaxis.range[1] if fig.layout.yaxis.range else interp_point[1] + 1  # максимум на y-оста
+            fig.add_trace(go.Scatter(
+                x=[x_interp_EiEd, x_interp_EiEd],
+                y=[interp_point[1], y_max],
+                mode='lines',
+                line=dict(color='purple', dash='dot'),
+                name='Вертикална линия към x2 ос',
+                xaxis='x2'  # насочваме към горната ос x2
+            ))
 
-# --- Добавяне на прозрачна линия, за да се визуализира горната ос (от 0 до 1)
-fig.add_trace(go.Scatter(
-    x=np.linspace(0, 1, 100),
-    y=[fig.layout.yaxis.range[0] if fig.layout.yaxis.range else 0]*100,  # долна част по y
-    mode='lines',
-    line=dict(color='rgba(0,0,0,0.1)', width=3),
-    xaxis='x2',
-    showlegend=False,
-    hoverinfo='skip'
-))
-
+# Конфигурация на осите
 fig.update_layout(
-    xaxis_title='H/D',
-    yaxis_title='y',
-    title='Изолинии с интерполации',
-    showlegend=False,
+    xaxis=dict(
+        title='H/D',
+        range=[0, 2.5],
+        zeroline=False
+    ),
     xaxis2=dict(
+        title='Допълнителна ос (x2)',
         overlaying='x',
         side='top',
-        range=[0, 1],
-        showgrid=False,
-        zeroline=False,
-        tickmode='auto',
-        ticks='outside'
+        range=[0, 2.5],
+        zeroline=False
+    ),
+    yaxis=dict(
+        title='y',
+        range=[0, 1.5],
+        zeroline=False
+    ),
+    height=600,
+    width=900,
+    legend=dict(
+        yanchor="top",
+        y=0.99,
+        xanchor="left",
+        x=0.01
     )
 )
 
