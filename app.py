@@ -8,7 +8,7 @@ st.title("Комбинирани изолинии")
 df_original = pd.read_csv("danni.csv")
 
 # Зареждане на новите данни
-df_new = pd.read_csv("Оразмеряване на опън за междиннен плстH_D.csv")
+df_new = pd.read_csv("Оразмеряване на опън за междинен плстH_D.csv")
 df_new.rename(columns={'Esr/Ei': 'sr_Ei'}, inplace=True)
 
 # Създаване на фигура
@@ -25,7 +25,7 @@ if 'Ei/Ed' in df_original.columns:
             mode='lines',
             name=f'Ei/Ed = {level}',
             line=dict(width=2)
-        )  # <-- Здесь была пропущена закрывающая скобка
+        ))  # Правилно затваряне на всички скоби
 
 # 2. Добавяне на новите изолинии за sr_Ei
 if 'sr_Ei' in df_new.columns:
@@ -38,7 +38,7 @@ if 'sr_Ei' in df_new.columns:
             mode='lines',
             name=f'σsr/Ei = {sr_Ei}',
             line=dict(width=2)
-        ))
+        ))  # Правилно затваряне на всички скоби
 
 # Добавяне на втора x-ос (горна ос)
 fig.update_layout(
@@ -46,10 +46,10 @@ fig.update_layout(
         title='Нова ос',
         overlaying='x',
         side='top',
-        range=[0, 1],  # от 0 до 1
+        range=[0, 1],
         anchor='free',
-        position=1.0,  # позиция върху графиката
-        matches='x',   # синхронизиране с основната x-ос
+        position=1.0,
+        matches='x',
         showgrid=False
     )
 )
