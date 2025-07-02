@@ -270,3 +270,10 @@ fig.update_layout(
 )
 
 st.plotly_chart(fig)
+
+# Изчисляване и показване на sigma_r под диаграмата
+if 'interp_point' in locals() and 'x_interp_EiEd' in locals():
+    sigma_r = abs(interp_point[0] - x_interp_EiEd) / 2
+    st.markdown(f"**σ_r = {sigma_r:.3f}**")
+else:
+    st.markdown("**σ_r = -** (Няма изчислена стойност)")
