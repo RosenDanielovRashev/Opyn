@@ -140,22 +140,19 @@ fig.update_layout(
     legend=dict(title='Легенда')
 )
 
-# --- ТУК ЗАПОЧВАМЕ ДА НАМИРАМЕ ТОЧКАТА ---
+# --- Намиране на точката и интерполация ---
 
-# Целеви стойности
 target_Hn_D = ratio  # Hn/D
 target_sr_Ei = Esr / En if En != 0 else 0  # Esr/Ei
 
-# Намиране на съседните изолинии
 unique_sr_Ei = np.array(unique_sr_Ei)
 if target_sr_Ei < unique_sr_Ei.min() or target_sr_Ei > unique_sr_Ei.max():
     st.warning(f"Стойността Esr/Ei = {target_sr_Ei:.3f} е извън диапазона на наличните изолинии.")
-    # Ако извън диапазона, просто вземаме най-близката изолиния
     closest_sr = unique_sr_Ei[np.argmin(np.abs(unique_sr_Ei - target_sr_Ei))]
     df_closest = df_new[df_new['sr_Ei'] == closest_sr].sort_values(by='H/D')
     interpolated_y = np.interp(target_Hn_D, df_closest['H/D'], df_closest['y'])
+    lower_sr = upper_sr = closest_sr
 else:
-    # Индекси на съседни стойности
     upper_index = np.searchsorted(unique_sr_Ei, target_sr_Ei, side='right')
     lower_index = upper_index - 1
     lower_sr = unique_sr_Ei[lower_index]
@@ -167,14 +164,35 @@ else:
     y_lower = np.interp(target_Hn_D, df_lower['H/D'], df_lower['y'])
     y_upper = np.interp(target_Hn_D, df_upper['H/D'], df_upper['y'])
 
-    interpolated_y = y_lower + (y_upper - y_lower) * (target_sr_Ei - lower_sr) / (upper_sr - lower_sr)
+    if lower_sr == upper_sr:
+        interpolated_y = y_lower
+    else:
+        interpolated_y = y_lower + (y_upper - y_lower) * (target_sr_Ei - lower_sr) / (upper_sr - lower_sr)
 
-# Добавяне на точката върху графиката
+# Добавяне на пунктирана линия между двете изолинии на съответното H/D
+fig.add_trace(go.Scatter(
+    x=[target_Hn_D, target_Hn_D],
+    y=[y_lower, y_upper],
+    mode='lines',
+    line=dict(color='green', width=2, dash='dot'),
+    name='Интерполация между изолинии'
+))
+
+# Добавяне на вертикална линия от точката до абсцисата (x-оста)
+fig.add_trace(go.Scatter(
+    x=[target_Hn_D, target_Hn_D],
+    y=[0, interpolated_y],
+    mode='lines',
+    line=dict(color='blue', width=2, dash='dash'),
+    name='Вертикална проекция на x'
+))
+
+# Добавяне на точката (обикновен кръг)
 fig.add_trace(go.Scatter(
     x=[target_Hn_D],
     y=[interpolated_y],
     mode='markers',
-    marker=dict(color='red', size=10, symbol='star'),
+    marker=dict(color='red', size=10, symbol='circle'),
     name=f'Точка (Hn/D, Esr/Ei)'
 ))
 
