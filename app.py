@@ -73,14 +73,15 @@ En = E_values[-1]
 # Показване с индекс равен на броя на пластовете (например E₅ ако n=5)
 st.markdown("### Изчисления с последен пласт")
 
-# Поправени LaTeX формули с rf-string за по-добра визуализация
-st.latex(rf"E_{{{n}}} = {En:.3f}")
+st.latex(r"E_{" + str(n) + r"} = " + f"{En:.3f}")
 
+# Изчисления за Esr / En
 Esr_over_En = Esr / En if En != 0 else 0
-st.latex(rf"\frac{{Esr}}{{E_{{{n}}}}} = \frac{{{Esr:.3f}}}{{{En:.3f}}} = {Esr_over_En:.3f}")
+st.latex(r"\frac{Esr}{E_{" + str(n) + r"}} = \frac{" + f"{Esr:.3f}" + "}{" + f"{En:.3f}" + "} = " + f"{Esr_over_En:.3f}")
 
+# Изчисления за En / Ed
 En_over_Ed = En / Ed if Ed != 0 else 0
-st.latex(rf"\frac{{E_{{{n}}}}}{{E_d}} = \frac{{{En:.3f}}}{{{Ed:.3f}}} = {En_over_Ed:.3f}")
+st.latex(r"\frac{E_{" + str(n) + r"}}{E_d} = \frac{" + f"{En:.3f}" + "}{" + f"{Ed:.3f}" + "} = " + f"{En_over_Ed:.3f}")
 
 # Зареждане на данни и построяване на графика
 df_original = pd.read_csv("danni.csv")
@@ -113,21 +114,12 @@ if 'sr_Ei' in df_new.columns:
             line=dict(width=2)
         ))
 
-# Добавяне на точка (Hn/D, Esr/Ei) от текущите изчисления
-fig.add_trace(go.Scatter(
-    x=[ratio],
-    y=[Esr_over_En],
-    mode='markers',
-    name='Текуща точка (Hn/D, Esr/Ei)',
-    marker=dict(color='red', size=10, symbol='circle')
-))
-
 # Добавяне на прозрачна линия за втората ос (σₙ)
 fig.add_trace(go.Scatter(
     x=np.linspace(0, 1, 50),
-    y=[0.05]*50,  # някаква ниска фиксирана стойност, за да не пречи на графиката
+    y=[0.05]*50,
     mode='lines',
-    line=dict(color='rgba(0,0,0,0)'),  # прозрачен
+    line=dict(color='rgba(0,0,0,0)'),
     xaxis='x2',
     showlegend=False,
     hoverinfo='skip'
@@ -164,27 +156,37 @@ fig.update_layout(
     legend=dict(title='Легенда')
 )
 
-st.plotly_chart(fig, use_container_width=False)
+# --- Добавяне на точка (Hn/D, Esr/En) чрез интерполация между изолиниите ---
 
-# --- Интерполация на Esr/Ei между изолиниите от df_new ---
+target_Hn_D = ratio
+target_sr_Ei = Esr_over_En
 
-available_sr_Ei = sorted(df_new['sr_Ei'].unique())
+unique_sr_Ei = sorted(df_new['sr_Ei'].unique())
 
-# Намиране на две съседни изолинии около текущия Esr/Ei
-lower = max([v for v in available_sr_Ei if v <= Esr_over_En], default=None)
-upper = min([v for v in available_sr_Ei if v >= Esr_over_En], default=None)
+lower_sr = max([v for v in unique_sr_Ei if v <= target_sr_Ei], default=unique_sr_Ei[0])
+upper_sr = min([v for v in unique_sr_Ei if v >= target_sr_Ei], default=unique_sr_Ei[-1])
 
-if lower is not None and upper is not None and lower != upper:
-    df_lower = df_new[df_new['sr_Ei'] == lower].sort_values(by='H/D')
-    df_upper = df_new[df_new['sr_Ei'] == upper].sort_values(by='H/D')
+df_lower = df_new[df_new['sr_Ei'] == lower_sr].sort_values(by='H/D')
+df_upper = df_new[df_new['sr_Ei'] == upper_sr].sort_values(by='H/D')
 
-    y_lower = np.interp(ratio, df_lower['H/D'], df_lower['y'])
-    y_upper = np.interp(ratio, df_upper['H/D'], df_upper['y'])
+y_lower = np.interp(target_Hn_D, df_lower['H/D'], df_lower['y'])
+y_upper = np.interp(target_Hn_D, df_upper['H/D'], df_upper['y'])
 
-    weight = (Esr_over_En - lower) / (upper - lower)
-    interpolated_y = y_lower + (y_upper - y_lower) * weight
-
-    st.markdown("### 🎯 Интерполирана стойност на y (от изолинии):")
-    st.latex(rf"y = {y_lower:.3f} + ({y_upper:.3f} - {y_lower:.3f}) \cdot {weight:.3f} = {interpolated_y:.3f}")
+if upper_sr == lower_sr:
+    interpolated_y = y_lower
 else:
-    st.warning("Esr/Ei е извън диапазона на наличните изолинии за интерполация.")
+    interpolated_y = y_lower + (y_upper - y_lower) * (target_sr_Ei - lower_sr) / (upper_sr - lower_sr)
+
+fig.add_trace(go.Scatter(
+    x=[target_Hn_D],
+    y=[interpolated_y],
+    mode='markers',
+    marker=dict(color='red', size=12, symbol='star'),
+    name=f'Точка (Hn/D, Esr/Ei)'
+))
+
+st.plotly_chart(fig)
+
+# Показване на резултата под графиката
+st.markdown(f"### Точка при Hn/D = {target_Hn_D:.3f} и Esr/Ei = {target_sr_Ei:.3f}")
+st.latex(rf"\left({target_Hn_D:.3f}, {interpolated_y:.3f}\right)")
