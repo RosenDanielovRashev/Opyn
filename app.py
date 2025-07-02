@@ -227,44 +227,38 @@ if lower_index is not None:
                 name='Пресечна точка с Ei/Ed'
             ))
 
-            # --- Тук добавяме вертикална линия от оранжевата точка нагоре до горната ос x2
-            y_max = fig.layout.yaxis.range[1] if fig.layout.yaxis.range else interp_point[1] + 1  # максимум на y-оста
+            # Добавяне на вертикална линия от оранжевата точка нагоре до горната част на графиката
+            y_max = fig.layout.yaxis.range[1] if fig.layout.yaxis and fig.layout.yaxis.range else 1.5
             fig.add_trace(go.Scatter(
                 x=[x_interp_EiEd, x_interp_EiEd],
                 y=[interp_point[1], y_max],
                 mode='lines',
                 line=dict(color='purple', dash='dot'),
-                name='Вертикална линия към x2 ос',
-                xaxis='x2'  # насочваме към горната ос x2
+                name='Вертикална линия към горната ос'
             ))
+        else:
+            st.warning("Не може да се намери пресечна точка на хоризонталната линия с изолинията Ei/Ed.")
+    else:
+        st.warning("Извън интервала на наличните изолинии Ei/Ed за пресичане.")
 
-# Конфигурация на осите
+else:
+    st.warning("Esr/Ei не попада между наличните изолинии в данните.")
+
 fig.update_layout(
-    xaxis=dict(
-        title='H/D',
-        range=[0, 2.5],
-        zeroline=False
-    ),
-    xaxis2=dict(
-        title='Допълнителна ос (x2)',
-        overlaying='x',
-        side='top',
-        range=[0, 2.5],
-        zeroline=False
-    ),
-    yaxis=dict(
-        title='y',
-        range=[0, 1.5],
-        zeroline=False
-    ),
-    height=600,
-    width=900,
+    title="Комбинирани изолинии",
+    xaxis_title="H/D",
+    yaxis_title="y",
     legend=dict(
-        yanchor="top",
-        y=0.99,
-        xanchor="left",
-        x=0.01
-    )
+        orientation="h",
+        yanchor="bottom",
+        y=-0.3,
+        xanchor="center",
+        x=0.5,
+        bgcolor='rgba(255,255,255,0.8)',
+        bordercolor='black',
+        borderwidth=1
+    ),
+    margin=dict(b=100)
 )
 
 st.plotly_chart(fig, use_container_width=True)
