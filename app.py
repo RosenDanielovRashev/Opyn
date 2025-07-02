@@ -200,15 +200,7 @@ if lower_index is not None:
     y_on_closest_curve = interp_y_at_x(x_arr_closest, y_arr_closest, interp_point[0])
 
     # Добавяне на хоризонтална линия от интерполираната точка до кривата от df_original
-    fig.add_trace(go.Scatter(
-        x=[interp_point[0], interp_point[0] + (y_on_closest_curve - interp_point[1])],  # преместване по x с дължината на хор. линия
-        y=[interp_point[1], interp_point[1]],
-        mode='lines',
-        line=dict(color='green', dash='dashdot'),
-        name=f'Хоризонтална линия до Ei/Ed={closest_Ei_Ed}'
-    ))
-else:
-    st.warning("Стойността Esr/Ei е извън диапазона на изолиниите за интерполация.")
+   
 
 fig.update_layout(
     xaxis_title="H / D",
