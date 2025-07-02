@@ -34,12 +34,10 @@ E_array = np.array(E_values)
 
 # Изчисления
 with st.expander("Изчислителни резултати", expanded=True):
-    # Изчисляване на Esr за първите n-1 пласта
     sum_h_n_1 = h_array[:-1].sum()
     weighted_sum_n_1 = np.sum(E_array[:-1] * h_array[:-1])
     Esr = weighted_sum_n_1 / sum_h_n_1 if sum_h_n_1 != 0 else 0
 
-    # Изчисляване на H_n и H_{n-1}
     H_n = h_array.sum()
     H_n_1 = sum_h_n_1
 
@@ -113,7 +111,7 @@ if 'sr_Ei' in df_new.columns:
 if 'sr_Ei' in df_new.columns:
     target_sr_Ei = Esr_over_En
     target_Hn_D = ratio
-    
+
     sr_values_sorted = sorted(df_new['sr_Ei'].unique())
     lower_index = None
 
@@ -164,45 +162,59 @@ if 'sr_Ei' in df_new.columns:
             name='Интерполирана точка'
         ))
 
-        # Добавяне на вертикална линия до абсцисата
-        fig.add_trace(go.Scatter(
-            x=[interp_point[0], interp_point[0]],
-            y=[interp_point[1], 0],
-            mode='lines',
-            line=dict(color='blue', dash='dash'),
-            name='Вертикална линия'
-        ))
+        # --- Тук добавям логиката за хоризонтално пресичане ---
 
-        # Намиране на изолинията Ei/Ed
+        target_y = interp_point[1]
+
+        # Намираме най-близката изолиния Ei/Ed към En_over_Ed
         if 'Ei/Ed' in df_original.columns:
-            # Намиране на най-близката изолиния Ei/Ed
             closest_Ei_Ed = min(unique_Ei_Ed, key=lambda x: abs(x - En_over_Ed))
             df_closest = df_original[df_original['Ei/Ed'] == closest_Ei_Ed].sort_values(by='H/D')
-            
-            # Намиране на пресечната точка с изолинията Ei/Ed
-            x_arr_closest = df_closest['H/D'].values
-            y_arr_closest = df_closest['y'].values
-            
-            # Намиране на y-стойността на изолинията за x = interp_point[0]
-            y_target = np.interp(interp_point[0], x_arr_closest, y_arr_closest)
-            
-            # Добавяне на хоризонтална линия до изолинията Ei/Ed
-            fig.add_trace(go.Scatter(
-                x=[interp_point[0], interp_point[0]],
-                y=[interp_point[1], y_target],
-                mode='lines',
-                line=dict(color='green', dash='dashdot'),
-                name=f'Хоризонтална линия до Ei/Ed={closest_Ei_Ed:.3f}'
-            ))
-            
-            # Добавяне на маркер в пресечната точка
-            fig.add_trace(go.Scatter(
-                x=[interp_point[0]],
-                y=[y_target],
-                mode='markers',
-                marker=dict(color='purple', size=8),
-                name=f'Пресечна точка с Ei/Ed={closest_Ei_Ed:.3f}'
-            ))
+
+            x_arr = df_closest['H/D'].values
+            y_arr = df_closest['y'].values
+
+            intersection_x = None
+            for j in range(len(x_arr) - 1):
+                y1, y2 = y_arr[j], y_arr[j+1]
+                if (y1 - target_y) * (y2 - target_y) <= 0:
+                    x1, x2 = x_arr[j], x_arr[j+1]
+                    if y2 != y1:
+                        t_interp = (target_y - y1) / (y2 - y1)
+                        intersection_x = x1 + t_interp * (x2 - x1)
+                    else:
+                        intersection_x = x1
+                    break
+
+            if intersection_x is not None:
+                # Добавяне на точката на пресичане
+                fig.add_trace(go.Scatter(
+                    x=[intersection_x],
+                    y=[target_y],
+                    mode='markers',
+                    marker=dict(color='purple', size=10),
+                    name=f'Пресечна точка с Ei/Ed={closest_Ei_Ed:.3f}'
+                ))
+
+                # Добавяне на хоризонтална линия от интерполирания пункт до точката на пресичане
+                fig.add_trace(go.Scatter(
+                    x=[interp_point[0], intersection_x],
+                    y=[target_y, target_y],
+                    mode='lines',
+                    line=dict(color='green', dash='dashdot'),
+                    name='Хоризонтална линия'
+                ))
+
+                # Добавяне на вертикална линия от интерполирания пункт надолу
+                fig.add_trace(go.Scatter(
+                    x=[interp_point[0], interp_point[0]],
+                    y=[interp_point[1], 0],
+                    mode='lines',
+                    line=dict(color='blue', dash='dash'),
+                    name='Вертикална линия'
+                ))
+            else:
+                st.warning("Не е намерена пресечна точка на хоризонталната линия с Ei/Ed изолиниите.")
     else:
         st.warning("Стойността Esr/Ei е извън диапазона на изолиниите за интерполация.")
 
@@ -217,7 +229,7 @@ fig.update_layout(
     hovermode='x unified'
 )
 
-# Добавяне на анотации за текущите параметри
+# Анотация за текущите параметри
 fig.add_annotation(
     x=ratio,
     y=0,
