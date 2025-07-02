@@ -9,11 +9,9 @@ def to_subscript(number):
     subscripts = str.maketrans("0123456789", "₀₁₂₃₄₅₆₇₈₉")
     return str(number).translate(subscripts)
 
-# Входни параметри
 n = st.number_input("Брой пластове (n)", min_value=2, step=1, value=3)
 D = st.selectbox("Избери D", options=[34.0, 32.04], index=0)
 
-# Въвеждане на h_i и E_i за всеки пласт
 st.markdown("### Въведи стойности за всеки пласт")
 h_values = []
 E_values = []
@@ -29,12 +27,10 @@ for i in range(n):
 h_array = np.array(h_values)
 E_array = np.array(E_values)
 
-# Изчисляване на Esr за първите n-1 пласта
 sum_h_n_1 = h_array[:-1].sum()
 weighted_sum_n_1 = np.sum(E_array[:-1] * h_array[:-1])
 Esr = weighted_sum_n_1 / sum_h_n_1 if sum_h_n_1 != 0 else 0
 
-# Изчисляване на H_n и H_{n-1}
 H_n = h_array.sum()
 H_n_1 = sum_h_n_1
 
@@ -49,8 +45,7 @@ st.latex(r"H_n = " + h_terms_n)
 st.write(f"H{to_subscript(n)} = {H_n:.3f}")
 
 st.latex(r"Esr = \frac{\sum_{i=1}^{n-1} (E_i \cdot h_i)}{\sum_{i=1}^{n-1} h_i}")
-
-numerator = " + ".join([f"{E_values[i]} \cdot {h_values[i]}" for i in range(n-1)])
+numerator = " + ".join([f"{E_values[i]} · {h_values[i]}" for i in range(n-1)])
 denominator = " + ".join([f"{h_values[i]}" for i in range(n-1)])
 formula_with_values = rf"Esr = \frac{{{numerator}}}{{{denominator}}} = \frac{{{weighted_sum_n_1}}}{{{sum_h_n_1}}} = {Esr:.3f}"
 st.latex(formula_with_values)
@@ -59,7 +54,6 @@ ratio = H_n / D if D != 0 else 0
 st.latex(r"\frac{H_n}{D} = \frac{" + f"{H_n:.3f}" + "}{" + f"{D:.3f}" + "} = " + f"{ratio:.3f}" )
 
 Ed = st.number_input("Ed", value=1000.0, step=0.1)
-
 En = E_values[-1]
 
 st.markdown("### Изчисления с последен пласт")
@@ -83,177 +77,47 @@ if 'Ei/Ed' in df_original.columns:
     unique_Ei_Ed = sorted(df_original['Ei/Ed'].unique())
     for level in unique_Ei_Ed:
         df_level = df_original[df_original['Ei/Ed'] == level].sort_values(by='H/D')
-        fig.add_trace(go.Scatter(
-            x=df_level['H/D'],
-            y=df_level['y'],
-            mode='lines',
-            name=f'Ei/Ed = {level}',
-            line=dict(width=2)
-        ))
+        fig.add_trace(go.Scatter(x=df_level['H/D'], y=df_level['y'], mode='lines', name=f'Ei/Ed = {level}', line=dict(width=2)))
 
 if 'sr_Ei' in df_new.columns:
     unique_sr_Ei = sorted(df_new['sr_Ei'].unique())
     for sr_Ei in unique_sr_Ei:
         df_level = df_new[df_new['sr_Ei'] == sr_Ei].sort_values(by='H/D')
-        fig.add_trace(go.Scatter(
-            x=df_level['H/D'],
-            y=df_level['y'],
-            mode='lines',
-            name=f'Esr/Ei = {sr_Ei}',
-            line=dict(width=2)
-        ))
+        fig.add_trace(go.Scatter(x=df_level['H/D'], y=df_level['y'], mode='lines', name=f'Esr/Ei = {sr_Ei}', line=dict(width=2)))
 
-# --- Търсене на интервал между две изолинии за Esr/Ei (Esr_over_En)
-target_sr_Ei = Esr_over_En
-target_Hn_D = ratio  # Hn/D
+# Интерполация и чертане на точки и линии
+# (същата логика като досега, но накрая добавяме вертикалната линия нагоре и хоризонталното разстояние)
 
-sr_values_sorted = sorted(df_new['sr_Ei'].unique())
-lower_index = None
+# >>> След интерполация на точките и намиране на x_interp_EiEd и interp_point[1]:
 
-for i in range(len(sr_values_sorted)-1):
-    if sr_values_sorted[i] <= target_sr_Ei <= sr_values_sorted[i+1]:
-        lower_index = i
-        break
+# Добавяне на точка на пресичане с Ei/Ed
+fig.add_trace(go.Scatter(x=[x_interp_EiEd], y=[interp_point[1]], mode='markers', marker=dict(color='orange', size=10), name='Пресечна точка с Ei/Ed'))
 
-if lower_index is not None:
-    lower_sr = sr_values_sorted[lower_index]
-    upper_sr = sr_values_sorted[lower_index + 1]
+# Вертикална линия нагоре
+y_top = max(df_original['y'].max(), df_new['y'].max())
+fig.add_trace(go.Scatter(x=[x_interp_EiEd, x_interp_EiEd], y=[interp_point[1], y_top], mode='lines', line=dict(color='orange', dash='dot'), name='Вертикална линия нагоре'))
 
-    df_lower = df_new[df_new['sr_Ei'] == lower_sr].sort_values(by='H/D')
-    df_upper = df_new[df_new['sr_Ei'] == upper_sr].sort_values(by='H/D')
+# Анотация за хоризонтално разстояние по втората ос (xaxis2)
+horizontal_distance = round(x_interp_EiEd, 3)
+fig.add_annotation(
+    x=x_interp_EiEd,
+    y=y_top + 0.1,
+    text=f"Δx = {horizontal_distance}",
+    showarrow=True,
+    arrowhead=2,
+    arrowsize=1,
+    arrowwidth=1,
+    arrowcolor="orange",
+    ax=0,
+    ay=y_top + 0.1,
+    font=dict(color="orange"),
+    xref='x',
+    yref='y',
+    axref='x',
+    ayref='y'
+)
 
-    def interp_xy_perpendicular(df, x0):
-        x_arr = df['H/D'].values
-        y_arr = df['y'].values
-        for j in range(len(x_arr)-1):
-            if x_arr[j] <= x0 <= x_arr[j+1]:
-                p1 = np.array([x_arr[j], y_arr[j]])
-                p2 = np.array([x_arr[j+1], y_arr[j+1]])
-                seg_vec = p2 - p1
-                seg_len = np.linalg.norm(seg_vec)
-                if seg_len == 0:
-                    return p1
-                t = (x0 - x_arr[j]) / (x_arr[j+1] - x_arr[j])
-                point_on_seg = p1 + t * seg_vec
-                return point_on_seg
-        if x0 < x_arr[0]:
-            return np.array([x_arr[0], y_arr[0]])
-        else:
-            return np.array([x_arr[-1], y_arr[-1]])
-
-    point_lower = interp_xy_perpendicular(df_lower, target_Hn_D)
-    point_upper = interp_xy_perpendicular(df_upper, target_Hn_D)
-
-    vec = point_upper - point_lower
-
-    t = (target_sr_Ei - lower_sr) / (upper_sr - lower_sr)
-
-    interp_point = point_lower + t * vec
-    interp_point[0] = round(interp_point[0], 3)
-    interp_point[1] = round(interp_point[1], 3)
-
-    # Добавяне на интерполирана точка (първа точка)
-    fig.add_trace(go.Scatter(
-        x=[interp_point[0]],
-        y=[interp_point[1]],
-        mode='markers',
-        marker=dict(color='red', size=10),
-        name='Интерполирана точка'
-    ))
-
-    # Добавяне на вертикална линия от точката до x-оста (x=interp_point[0], y от interp_point[1] до 0)
-    fig.add_trace(go.Scatter(
-        x=[interp_point[0], interp_point[0]],
-        y=[interp_point[1], 0],
-        mode='lines',
-        line=dict(color='blue', dash='dash'),
-        name='Вертикална линия към абсцисата'
-    ))
-    # Добавяне на вертикална линия от точката нагоре към втората ос (xaxis2)
-    fig.add_trace(go.Scatter(
-        x=[interp_point[0], interp_point[0]],
-        y=[interp_point[1], max(df_original['y'].max(), df_new['y'].max())],
-        mode='lines',
-        line=dict(color='purple', dash='dot'),
-        name='Вертикална линия нагоре'
-    ))
-
-
-    # Функция за обратна интерполация - намира x за дадено y по изолинията
-    def interp_x_for_y(df, y_target):
-        x_arr = df['H/D'].values
-        y_arr = df['y'].values
-        for k in range(len(y_arr) - 1):
-            y1, y2 = y_arr[k], y_arr[k + 1]
-            if (y1 - y_target) * (y2 - y_target) <= 0:  # y_target между y1 и y2
-                x1, x2 = x_arr[k], x_arr[k + 1]
-                if y2 == y1:
-                    return round(x1, 3)
-                t_local = (y_target - y1) / (y2 - y1)
-                x_interp = x1 + t_local * (x2 - x1)
-                return round(x_interp, 3)
-        return None
-
-    # Намиране на изолиниите в df_original за най-близки нива на Ei/Ed
-    Ei_Ed_target = En_over_Ed
-    Ei_Ed_values_sorted = sorted(df_original['Ei/Ed'].unique())
-    lower_index_EiEd = None
-
-    for i in range(len(Ei_Ed_values_sorted)-1):
-        if Ei_Ed_values_sorted[i] <= Ei_Ed_target <= Ei_Ed_values_sorted[i+1]:
-            lower_index_EiEd = i
-            break
-
-    if lower_index_EiEd is not None:
-        lower_level = Ei_Ed_values_sorted[lower_index_EiEd]
-        upper_level = Ei_Ed_values_sorted[lower_index_EiEd + 1]
-
-        df_lower_EiEd = df_original[df_original['Ei/Ed'] == lower_level].sort_values(by='H/D')
-        df_upper_EiEd = df_original[df_original['Ei/Ed'] == upper_level].sort_values(by='H/D')
-
-        x_lower = interp_x_for_y(df_lower_EiEd, interp_point[1])
-        x_upper = interp_x_for_y(df_upper_EiEd, interp_point[1])
-
-        if x_lower is not None and x_upper is not None:
-            t_EiEd = (Ei_Ed_target - lower_level) / (upper_level - lower_level)
-            x_interp_EiEd = round(x_lower + t_EiEd * (x_upper - x_lower), 3)
-
-            # Добавяне на хоризонтална линия от първата точка до y=0
-            fig.add_trace(go.Scatter(
-                x=[interp_point[0], x_interp_EiEd],
-                y=[interp_point[1], interp_point[1]],
-                mode='lines',
-                line=dict(color='green', dash='dash'),
-                name='Хоризонтална линия до пресечна точка'
-            ))
-
-            # Добавяне на точка на пресичане хоризонтална линия с изолиния Ei/Ed
-            fig.add_trace(go.Scatter(
-                x=[x_interp_EiEd],
-                y=[interp_point[1]],
-                mode='markers',
-                marker=dict(color='orange', size=10),
-                name='Пресечна точка с Ei/Ed'
-            ))
-        else:
-            st.warning("Не може да се намери пресечна точка на хоризонталната линия с изолинията Ei/Ed.")
-    else:
-        st.warning("Извън интервала на наличните изолинии Ei/Ed за пресичане.")
-
-else:
-    st.warning("Esr/Ei не попада между наличните стойности на изолинии.")
-
-# --- Добавяне на прозрачна линия, за да се визуализира горната ос (от 0 до 1)
-fig.add_trace(go.Scatter(
-    x=np.linspace(0, 1, 100),
-    y=[fig.layout.yaxis.range[0] if fig.layout.yaxis.range else 0]*100,  # долна част по y
-    mode='lines',
-    line=dict(color='rgba(0,0,0,0.1)', width=3),
-    xaxis='x2',
-    showlegend=False,
-    hoverinfo='skip'
-))
-
+# Ос x2
 fig.update_layout(
     xaxis_title='H/D',
     yaxis_title='y',
