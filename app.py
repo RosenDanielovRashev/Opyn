@@ -170,6 +170,15 @@ if lower_index is not None:
         name='Вертикална линия към абсцисата'
     ))
 
+    # Добавяне на вертикална линия от оранжевата точка (interp_point[0], interp_point[1]) до y=2.5
+    fig.add_trace(go.Scatter(
+        x=[interp_point[0], interp_point[0]],
+        y=[interp_point[1], 2.5],
+        mode='lines',
+        line=dict(color='orange', dash='dash'),
+        name='Вертикална линия до y=2.5'
+    ))
+
     # Функция за обратна интерполация - намира x за дадено y по изолинията
     def interp_x_for_y(df, y_target):
         x_arr = df['H/D'].values
@@ -226,46 +235,25 @@ if lower_index is not None:
                 marker=dict(color='orange', size=10),
                 name='Пресечна точка с Ei/Ed'
             ))
-
-            # Добавяне на вертикална линия от оранжевата точка до y=2.5 (твоето искане)
-            fig.add_trace(go.Scatter(
-                x=[x_interp_EiEd, x_interp_EiEd],
-                y=[interp_point[1], 2.5],
-                mode='lines',
-                line=dict(color='orange', dash='dot'),
-                name='Вертикална линия от оранжева точка до y=2.5'
-            ))
         else:
             st.warning("Не може да се намери пресечна точка на хоризонталната линия с изолинията Ei/Ed.")
     else:
         st.warning("Извън интервала на наличните изолинии Ei/Ed за пресичане.")
 
 else:
-    st.warning("Esr/Ei не попада между наличните стойности на изолинии.")
-
-# --- Добавяне на прозрачна линия, за да се визуализира горната ос (от 0 до 1)
-fig.add_trace(go.Scatter(
-    x=np.linspace(0, 1, 100),
-    y=[fig.layout.yaxis.range[0] if fig.layout.yaxis.range else 0]*100,  # долна част по y
-    mode='lines',
-    line=dict(color='rgba(0,0,0,0.1)', width=3),
-    xaxis='x2',
-    showlegend=False,
-    hoverinfo='none'
-))
+    st.warning("Esr/Ei не попада между наличните стойности в данните.")
 
 fig.update_layout(
-    title='Графика на изолинии',
+    title='Комбинирани изолинии',
     xaxis_title='H/D',
     yaxis_title='y',
-    showlegend=False
+    showlegend=False  # Скриваме легендата
 )
 
 st.plotly_chart(fig, use_container_width=True)
 
-# --- Добавяне на sigma r под номограмата ---
-try:
+# Показваме sigma r под графиката
+if 'x_interp_EiEd' in locals():
     st.markdown(f"### σᵣ = {x_interp_EiEd}")
-except NameError:
-    st.markdown("### σᵣ = (няма изчислена стойност)")
-
+else:
+    st.markdown("### σᵣ: няма изчислена стойност")
