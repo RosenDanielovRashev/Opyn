@@ -169,6 +169,15 @@ if lower_index is not None:
         line=dict(color='blue', dash='dash'),
         name='Вертикална линия към абсцисата'
     ))
+    # Добавяне на вертикална линия от точката нагоре към втората ос (xaxis2)
+    fig.add_trace(go.Scatter(
+        x=[interp_point[0], interp_point[0]],
+        y=[interp_point[1], max(df_original['y'].max(), df_new['y'].max())],
+        mode='lines',
+        line=dict(color='purple', dash='dot'),
+        name='Вертикална линия нагоре'
+    ))
+
 
     # Функция за обратна интерполация - намира x за дадено y по изолинията
     def interp_x_for_y(df, y_target):
