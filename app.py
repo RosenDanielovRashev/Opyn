@@ -24,10 +24,10 @@ def to_subscript(number):
 cols = st.columns(2)
 for i in range(n):
     with cols[0]:
-        h = st.number_input(f"h{to_subscript(i+1)}", value=1.0, step=0.1, key=f"h_{i}")
+        h = st.number_input(f"h{to_subscript(i+1)}", value=4.0, step=0.1, key=f"h_{i}")
         h_values.append(h)
     with cols[1]:
-        E = st.number_input(f"E{to_subscript(i+1)}", value=1.0, step=0.1, key=f"E_{i}")
+        E = st.number_input(f"E{to_subscript(i+1)}", value=1000.0, step=0.1, key=f"E_{i}")
         E_values.append(E)
 
 # Изчисляване на Esr и H
@@ -35,13 +35,19 @@ h_array = np.array(h_values)
 E_array = np.array(E_values)
 
 sum_h = h_array.sum()
-Esr = np.sum(E_array * h_array) / sum_h if sum_h != 0 else 0
+weighted_sum = np.sum(E_array * h_array)
+Esr = weighted_sum / sum_h if sum_h != 0 else 0
 
-# Показване на формулите с LaTeX
+# Показване на формулата с LaTeX
 st.latex(r"Esr = \frac{\sum_{i=1}^{n} (E_i \cdot h_i)}{\sum_{i=1}^{n} h_i}")
-st.latex(r"H = \sum_{i=1}^{n} h_i")
 
-# Показване на резултатите
+# Показване на формулата с конкретни стойности (пример за n=3)
+numerator = " + ".join([f"{E_values[i]} \cdot {h_values[i]}" for i in range(n)])
+denominator = " + ".join([f"{h_values[i]}" for i in range(n)])
+formula_with_values = rf"Esr = \frac{{{numerator}}}{{{denominator}}} = \frac{{{weighted_sum}}}{{{sum_h}}} = {Esr:.3f}"
+st.latex(formula_with_values)
+
+st.latex(r"H = \sum_{i=1}^{n} h_i")
 st.write(f"Обща дебелина H = {sum_h:.3f}")
 st.write(f"Изчислено Esr = {Esr:.3f}")
 
@@ -52,8 +58,15 @@ Ei_last = st.number_input(f"E (последен пласт, E{to_subscript(n)}) 
 if Ei_last is not None and Ei_last != 0:
     E_values[-1] = Ei_last
     E_array = np.array(E_values)
-    Esr = np.sum(E_array * h_array) / sum_h if sum_h != 0 else 0
-    st.write(f"Обновено Esr с алтернативен E{to_subscript(n)} = {Esr:.3f}")
+    weighted_sum = np.sum(E_array * h_array)
+    Esr = weighted_sum / sum_h if sum_h != 0 else 0
+
+    numerator = " + ".join([f"{E_values[i]} \cdot {h_values[i]}" for i in range(n)])
+    formula_with_values = rf"Esr = \frac{{{numerator}}}{{{denominator}}} = \frac{{{weighted_sum}}}{{{sum_h}}} = {Esr:.3f}"
+    
+    st.write(f"Обновено с алтернативен E{to_subscript(n)}:")
+    st.latex(formula_with_values)
+    st.write(f"Обновено Esr = {Esr:.3f}")
 
 # --- Номограма (графика) долу ---
 
