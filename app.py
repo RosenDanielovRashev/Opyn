@@ -58,7 +58,7 @@ st.latex(formula_with_values)
 ratio = H_n / D if D != 0 else 0
 st.latex(r"\frac{H_n}{D} = \frac{" + f"{H_n:.3f}" + "}{" + f"{D:.3f}" + "} = " + f"{ratio:.3f}" )
 
-Ed = st.number_input("Ed", value=1000.0, step=0.1)
+Ed = st.number_input("Ed", value=100.0, step=0.1)
 
 En = E_values[-1]
 
