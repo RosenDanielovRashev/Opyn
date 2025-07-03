@@ -161,14 +161,11 @@ if lower_index is not None:
 
     interp_point = point_lower + t * vec
 
-    # **Промяна на образуването на червената точка**:
-    # x е зададено на ratio_r (Hn/D)
-    red_x = ratio_r
+    # Формируем червената точка:
+    red_x = ratio_r               # x = Hn/D
+    red_y = interp_point[1]       # y - интерполирана стойност по y от двете изолинии
 
-    # y се изчислява чрез интерполация по vertical line през Hn/D между двете изолинии (interp_point[1] вече е стойност на y)
-    red_y = interp_point[1]
-
-    # Добавяне на червената точка с новите координати (x = Hn/D, y = интерполирана стойност)
+    # Добавяне на червената точка в графиката
     fig.add_trace(go.Scatter(
         x=[red_x],
         y=[round(red_y,3)],
@@ -201,52 +198,13 @@ if lower_index is not None:
                 return x_interp
         return None
 
-    # Намиране на изолиниите в df_original за най-близки нива на Ei/Ed
-    Ei_Ed_target = En_over_Ed_r
-    Ei_Ed_values_sorted = sorted(df_original['Ei/Ed'].unique())
-    lower_index_EiEd = None
+    # Изчисляване на интерполирана стойност на H/D за Esr_over_En_r по двете изолинии
+    x_interp_lower = interp_x_for_y(df_lower, red_y)
+    x_interp_upper = interp_x_for_y(df_upper, red_y)
 
-    for i in range(len(Ei_Ed_values_sorted)-1):
-        if Ei_Ed_values_sorted[i] <= Ei_Ed_target <= Ei_Ed_values_sorted[i+1]:
-            lower_index_EiEd = i
-            break
-
-    if lower_index_EiEd is not None:
-        lower_level = Ei_Ed_values_sorted[lower_index_EiEd]
-        upper_level = Ei_Ed_values_sorted[lower_index_EiEd + 1]
-
-        df_lower_EiEd = df_original[df_original['Ei/Ed'] == lower_level].sort_values(by='H/D')
-        df_upper_EiEd = df_original[df_original['Ei/Ed'] == upper_level].sort_values(by='H/D')
-
-        x_lower = interp_x_for_y(df_lower_EiEd, round(red_y,3))
-        x_upper = interp_x_for_y(df_upper_EiEd, round(red_y,3))
-
-        if x_lower is not None and x_upper is not None:
-            t_EiEd = (Ei_Ed_target - lower_level) / (upper_level - lower_level)
-            x_interp_EiEd = x_lower + t_EiEd * (x_upper - x_lower)
-
-            # Показване на стойности в страничната лента
-            st.sidebar.markdown(f"## Информация за червената точка")
-            st.sidebar.write(f"Esr/Ei = {target_sr_Ei}")
-            st.sidebar.write(f"Hn/D = {ratio_r}")
-            st.sidebar.write(f"Интерполирана y (червена точка) = {round(red_y,3)}")
-            st.sidebar.write(f"Интерполирано x по Ei/Ed = {round(x_interp_EiEd,3)}")
-
-# Добавяне на оранжева точка - Hn/D, En/Ed
-fig.add_trace(go.Scatter(
-    x=[ratio_r],
-    y=[En_over_Ed_r],
-    mode='markers',
-    marker=dict(color='orange', size=10),
-    name='Точка Hn/D и En/Ed'
-))
-
-fig.update_layout(
-    title="Комбинирани изолинии",
-    xaxis_title="Hn/D",
-    yaxis_title="Стойности",
-    legend_title="Изолинии",
-    font=dict(size=14)
-)
+    if x_interp_lower is not None and x_interp_upper is not None:
+        # Интерполиране по Esr/Ei
+        x_interp_final = x_interp_lower + t * (x_interp_upper - x_interp_lower)
+        st.write(f"Интерполирана стойност на H/D за Esr/Ei={target_sr_Ei}: {round(x_interp_final,3)}")
 
 st.plotly_chart(fig, use_container_width=True)
