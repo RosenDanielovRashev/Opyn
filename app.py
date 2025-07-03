@@ -261,17 +261,21 @@ fig.update_layout(
     width=900,
     height=600
 )
-# --- Добавяне на невидим trace за втората ос (за да се покаже мащабът)
+# Добавяне на невидим trace за xaxis2, за да се появи
 fig.add_trace(go.Scatter(
     x=[0, 1],
-    y=[None, None],  # y не влияе
+    y=[None, None],  # Не е важно
     mode='lines',
     line=dict(color='rgba(0,0,0,0)'),
     showlegend=False,
     hoverinfo='skip',
-    xaxis='x2'  # Свързваме с втората ос
+    xaxis='x2'  # Използва втората ос
 ))
 
+# Определяне на границите на основната ос (ако са налични)
+xaxis_range = fig.layout.xaxis.range if fig.layout.xaxis.range else [0, 1]
+
+# Ъпдейт на layout с втората ос (xaxis2)
 fig.update_layout(
     title='Графика на изолинии',
     xaxis=dict(
@@ -282,18 +286,22 @@ fig.update_layout(
     xaxis2=dict(
         overlaying='x',
         side='top',
-        range=[fig.layout.xaxis.range[0] if fig.layout.xaxis.range else None, 0,2],
+        range=[xaxis_range[0], xaxis_range[1]],
         showgrid=False,
         zeroline=False,
-        tickvals=[0, 0.25, 0.5, 0.75, 1],
-        ticktext=['0', '0.25', '0.5', '0.75', '1'],
-        title='σr'
+        tickvals=[round(i * 0.01, 2) for i in range(21)],  # 0 до 0.20
+        ticktext=[f"{round(i * 0.01, 2):.2f}" for i in range(21)],
+        title='σᵣ / p',
+        ticks="outside"
     ),
     yaxis=dict(
         title='y',
     ),
-    showlegend=False
+    showlegend=False,
+    height=600,
+    width=900
 )
+
 st.plotly_chart(fig)
 
 # Изчисление на σr от x на оранжевата точка (ако съществува)
