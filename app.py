@@ -41,22 +41,22 @@ H_n_1 = sum_h_n_1
 st.latex(r"H_{n-1} = \sum_{i=1}^{n-1} h_i")
 h_terms = " + ".join([f"h_{to_subscript(i+1)}" for i in range(n-1)])
 st.latex(r"H_{n-1} = " + h_terms)
-st.write(f"H{to_subscript(n-1)} = {H_n_1:.3f}")
+st.write(f"H{to_subscript(n-1)} = {H_n_1}")
 
 st.latex(r"H_n = \sum_{i=1}^n h_i")
 h_terms_n = " + ".join([f"h_{to_subscript(i+1)}" for i in range(n)])
 st.latex(r"H_n = " + h_terms_n)
-st.write(f"H{to_subscript(n)} = {H_n:.3f}")
+st.write(f"H{to_subscript(n)} = {H_n}")
 
 st.latex(r"Esr = \frac{\sum_{i=1}^{n-1} (E_i \cdot h_i)}{\sum_{i=1}^{n-1} h_i}")
 
 numerator = " + ".join([f"{E_values[i]} \cdot {h_values[i]}" for i in range(n-1)])
 denominator = " + ".join([f"{h_values[i]}" for i in range(n-1)])
-formula_with_values = rf"Esr = \frac{{{numerator}}}{{{denominator}}} = \frac{{{weighted_sum_n_1}}}{{{sum_h_n_1}}} = {Esr:.3f}"
+formula_with_values = rf"Esr = \frac{{{numerator}}}{{{denominator}}} = \frac{{{weighted_sum_n_1}}}{{{sum_h_n_1}}} = {Esr}"
 st.latex(formula_with_values)
 
 ratio = H_n / D if D != 0 else 0
-st.latex(r"\frac{H_n}{D} = \frac{" + f"{H_n:.3f}" + "}{" + f"{D:.3f}" + "} = " + f"{ratio:.3f}" )
+st.latex(r"\frac{H_n}{D} = \frac{" + f"{H_n}" + "}{" + f"{D}" + "} = " + f"{ratio}" )
 
 Ed = st.number_input("Ed", value=100.0, step=0.1)
 
@@ -64,13 +64,13 @@ En = E_values[-1]
 
 st.markdown("### Изчисления с последен пласт")
 
-st.latex(r"E_{" + str(n) + r"} = " + f"{En:.3f}")
+st.latex(r"E_{" + str(n) + r"} = " + f"{En}")
 
 Esr_over_En = Esr / En if En != 0 else 0
-st.latex(r"\frac{Esr}{E_{" + str(n) + r"}} = \frac{" + f"{Esr:.3f}" + "}{" + f"{En:.3f}" + "} = " + f"{Esr_over_En:.3f}")
+st.latex(r"\frac{Esr}{E_{" + str(n) + r"}} = \frac{" + f"{Esr}" + "}{" + f"{En}" + "} = " + f"{Esr_over_En}")
 
 En_over_Ed = En / Ed if Ed != 0 else 0
-st.latex(r"\frac{E_{" + str(n) + r"}}{E_d} = \frac{" + f"{En:.3f}" + "}{" + f"{Ed:.3f}" + "} = " + f"{En_over_Ed:.3f}")
+st.latex(r"\frac{E_{" + str(n) + r"}}{E_d} = \frac{" + f"{En}" + "}{" + f"{Ed}" + "} = " + f"{En_over_Ed}")
 
 # Зареждане на данни и построяване на графика
 df_original = pd.read_csv("danni.csv")
@@ -149,8 +149,9 @@ if lower_index is not None:
     t = (target_sr_Ei - lower_sr) / (upper_sr - lower_sr)
 
     interp_point = point_lower + t * vec
-    interp_point[0] = round(interp_point[0], 3)
-    interp_point[1] = round(interp_point[1], 3)
+    # Премахнато закръгляне
+    # interp_point[0] = round(interp_point[0], 3)
+    # interp_point[1] = round(interp_point[1], 3)
 
     # Добавяне на интерполирана точка (първа точка)
     fig.add_trace(go.Scatter(
@@ -179,10 +180,10 @@ if lower_index is not None:
             if (y1 - y_target) * (y2 - y_target) <= 0:  # y_target между y1 и y2
                 x1, x2 = x_arr[k], x_arr[k + 1]
                 if y2 == y1:
-                    return round(x1, 3)
+                    return x1
                 t_local = (y_target - y1) / (y2 - y1)
                 x_interp = x1 + t_local * (x2 - x1)
-                return round(x_interp, 3)
+                return x_interp
         return None
 
     # Намиране на изолиниите в df_original за най-близки нива на Ei/Ed
@@ -207,7 +208,7 @@ if lower_index is not None:
 
         if x_lower is not None and x_upper is not None:
             t_EiEd = (Ei_Ed_target - lower_level) / (upper_level - lower_level)
-            x_interp_EiEd = round(x_lower + t_EiEd * (x_upper - x_lower), 3)
+            x_interp_EiEd = x_lower + t_EiEd * (x_upper - x_lower)
 
             # Добавяне на хоризонтална линия от първата точка до y=interp_point[1]
             fig.add_trace(go.Scatter(
@@ -274,7 +275,7 @@ st.plotly_chart(fig)
 
 # Проверка дали x_interp_EiEd е дефинирана и не е None
 if ('x_interp_EiEd' in locals()) and (x_interp_EiEd is not None):
-    sigma_r = (x_interp_EiEd )/2
-    st.markdown(f"**σr = {sigma_r:.3f}**")
+    sigma_r = (x_interp_EiEd)/2
+    st.markdown(f"**σr = {sigma_r}**")
 else:
     st.markdown("**σr = -** (Няма изчислена стойност)")
