@@ -149,9 +149,12 @@ if lower_index is not None:
     t = (target_sr_Ei - lower_sr) / (upper_sr - lower_sr)
 
     interp_point = point_lower + t * vec
-    # Премахнато закръгляне
-    # interp_point[0] = round(interp_point[0], 3)
-    # interp_point[1] = round(interp_point[1], 3)
+
+    # Debug отпечатвания за проверка
+    st.write(f"point_lower: {point_lower}, point_upper: {point_upper}")
+    st.write(f"t (интерполация): {t}")
+    st.write(f"interp_point (червена точка): {interp_point}")
+    st.write(f"target_Hn_D: {target_Hn_D}, target_sr_Ei: {target_sr_Ei}")
 
     # Добавяне на интерполирана точка (първа точка)
     fig.add_trace(go.Scatter(
@@ -228,7 +231,7 @@ if lower_index is not None:
                 name='Пресечна точка с Ei/Ed'
             ))
 
-            # Добавяне на вертикална линия от оранжевата точка до y=2.5 (твоето искане)
+            # Добавяне на вертикална линия от оранжевата точка до y=2.5
             fig.add_trace(go.Scatter(
                 x=[x_interp_EiEd, x_interp_EiEd],
                 y=[interp_point[1], 2.5],
@@ -240,12 +243,12 @@ if lower_index is not None:
 # --- Добавяне на невидим trace за втората ос (за да се покаже мащабът)
 fig.add_trace(go.Scatter(
     x=[0, 1],
-    y=[None, None],  # y не влияе
+    y=[None, None],
     mode='lines',
     line=dict(color='rgba(0,0,0,0)'),
     showlegend=False,
     hoverinfo='skip',
-    xaxis='x2'  # Свързваме с втората ос
+    xaxis='x2'
 ))
 
 fig.update_layout(
@@ -273,9 +276,8 @@ fig.update_layout(
 
 st.plotly_chart(fig)
 
-# Проверка дали x_interp_EiEd е дефинирана и не е None
-if ('x_interp_EiEd' in locals()) and (x_interp_EiEd is not None):
-    sigma_r = (x_interp_EiEd)/2
-    st.markdown(f"**σr = {sigma_r}**")
-else:
-    st.markdown("**σr = -** (Няма изчислена стойност)")
+# Проверка на изчислението
+st.write(f"Esr: {Esr}")
+st.write(f"Hn/D: {ratio}")
+st.write(f"Esr/En: {Esr_over_En}")
+st.write(f"En/Ed: {En_over_Ed}")
