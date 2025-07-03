@@ -261,7 +261,9 @@ fig.update_layout(
         showgrid=False,
         zeroline=False,
         tickvals=[0, 0.25, 0.5, 0.75, 1],
-        ticktext=['0', '0.25', '0.5', '0.75', '1']
+        ticktext=['0', '0.25', '0.5', '0.75', '1'],
+        title='σ_r',
+        titlefont=dict(size=16)
     ),
     yaxis=dict(
         title='y',
