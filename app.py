@@ -262,7 +262,7 @@ fig.update_layout(
         zeroline=False,
         tickvals=[0, 0.25, 0.5, 0.75, 1],
         ticktext=['0', '0.25', '0.5', '0.75', '1'],
-        title='σ_r'
+        title='σr'
     ),
     yaxis=dict(
         title='y',
@@ -275,6 +275,6 @@ st.plotly_chart(fig)
 # Проверка дали x_interp_EiEd е дефинирана и не е None
 if ('x_interp_EiEd' in locals()) and (x_interp_EiEd is not None):
     sigma_r = (x_interp_EiEd )/2
-    st.markdown(f"**σ_r = {sigma_r:.3f}**")
+    st.markdown(f"**σr = {sigma_r:.3f}**")
 else:
-    st.markdown("**σ_r = -** (Няма изчислена стойност)")
+    st.markdown("**σr = -** (Няма изчислена стойност)")
