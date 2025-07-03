@@ -114,6 +114,24 @@ if 'sr_Ei' in df_new.columns:
             line=dict(width=2)
         ))
 
+# --- Нова функция за линейна интерполация на y за дадено x (H/D)
+def interp_y_at_x(df, x0):
+    x_arr = df['H/D'].values
+    y_arr = df['y'].values
+
+    if x0 <= x_arr[0]:
+        return y_arr[0]
+    if x0 >= x_arr[-1]:
+        return y_arr[-1]
+
+    for i in range(len(x_arr) - 1):
+        if x_arr[i] <= x0 <= x_arr[i + 1]:
+            x1, x2 = x_arr[i], x_arr[i + 1]
+            y1, y2 = y_arr[i], y_arr[i + 1]
+            t = (x0 - x1) / (x2 - x1)
+            y_interp = y1 + t * (y2 - y1)
+            return y_interp
+
 # --- Търсене на интервал между две изолинии за Esr/Ei (Esr_over_En)
 target_sr_Ei = Esr_over_En_r
 target_Hn_D = ratio_r  # Hn/D
@@ -133,41 +151,20 @@ if lower_index is not None:
     df_lower = df_new[df_new['sr_Ei'] == lower_sr].sort_values(by='H/D')
     df_upper = df_new[df_new['sr_Ei'] == upper_sr].sort_values(by='H/D')
 
-    def interp_xy_perpendicular(df, x0):
-        x_arr = df['H/D'].values
-        y_arr = df['y'].values
-        for j in range(len(x_arr)-1):
-            if x_arr[j] <= x0 <= x_arr[j+1]:
-                p1 = np.array([x_arr[j], y_arr[j]])
-                p2 = np.array([x_arr[j+1], y_arr[j+1]])
-                seg_vec = p2 - p1
-                seg_len = np.linalg.norm(seg_vec)
-                if seg_len == 0:
-                    return p1
-                t = (x0 - x_arr[j]) / (x_arr[j+1] - x_arr[j])
-                point_on_seg = p1 + t * seg_vec
-                return point_on_seg
-        if x0 < x_arr[0]:
-            return np.array([x_arr[0], y_arr[0]])
-        else:
-            return np.array([x_arr[-1], y_arr[-1]])
+    # Изчисляване на y за даденото ratio_r (x) за двете изолинии
+    y_lower = interp_y_at_x(df_lower, ratio_r)
+    y_upper = interp_y_at_x(df_upper, ratio_r)
 
-    point_lower = interp_xy_perpendicular(df_lower, target_Hn_D)
-    point_upper = interp_xy_perpendicular(df_upper, target_Hn_D)
+    # Линейна интерполация по sr_Ei (Esr/Ei)
+    t_sr = (target_sr_Ei - lower_sr) / (upper_sr - lower_sr)
+    interp_y = y_lower + t_sr * (y_upper - y_lower)
 
-    vec = point_upper - point_lower
+    interp_point = np.array([ratio_r, interp_y])
 
-    t = (target_sr_Ei - lower_sr) / (upper_sr - lower_sr)
-
-    interp_point = point_lower + t * vec
-
-    # Задаваме x на червената точка равно на ratio (Hn/D)
-    interp_point[0] = ratio_r
-
-    # Добавяне на интерполирана точка (първа точка)
+    # Добавяне на интерполирана точка (червена)
     fig.add_trace(go.Scatter(
         x=[interp_point[0]],
-        y=[round(interp_point[1],3)],
+        y=[interp_point[1]],
         mode='markers',
         marker=dict(color='red', size=10),
         name='Интерполирана точка'
@@ -176,7 +173,7 @@ if lower_index is not None:
     # Добавяне на вертикална линия от точката до x-оста (x=interp_point[0], y от interp_point[1] до 0)
     fig.add_trace(go.Scatter(
         x=[interp_point[0], interp_point[0]],
-        y=[round(interp_point[1],3), 0],
+        y=[interp_point[1], 0],
         mode='lines',
         line=dict(color='blue', dash='dash'),
         name='Вертикална линия към абсцисата'
@@ -188,7 +185,7 @@ if lower_index is not None:
         y_arr = df['y'].values
         for k in range(len(y_arr) - 1):
             y1, y2 = y_arr[k], y_arr[k + 1]
-            if (y1 - y_target) * (y2 - y_target) <= 0:  # y_target между y1 и y2
+            if (y1 - y_target) * (y2 - y_target) <= 0:
                 x1, x2 = x_arr[k], x_arr[k + 1]
                 if y2 == y1:
                     return x1
@@ -223,71 +220,20 @@ if lower_index is not None:
 
             # Добавяне на хоризонтална линия от първата точка до y=interp_point[1]
             fig.add_trace(go.Scatter(
-                x=[interp_point[0], round(x_interp_EiEd,3)],
-                y=[round(interp_point[1],3), round(interp_point[1],3)],
+                x=[interp_point[0], x_interp_EiEd],
+                y=[interp_point[1], interp_point[1]],
                 mode='lines',
                 line=dict(color='green', dash='dash'),
-                name='Хоризонтална линия до пресечна точка'
+                name='Хоризонтална линия'
             ))
-
-            # Добавяне на оранжева точка на пресичане хоризонтална линия с изолиния Ei/Ed
-            fig.add_trace(go.Scatter(
-                x=[round(x_interp_EiEd,3)],
-                y=[round(interp_point[1],3)],
-                mode='markers',
-                marker=dict(color='orange', size=10),
-                name='Пресечна точка с Ei/Ed'
-            ))
-
-            # Добавяне на вертикална линия от оранжевата точка до y=2.5 (твоето искане)
-            fig.add_trace(go.Scatter(
-                x=[round(x_interp_EiEd,3), round(x_interp_EiEd,3)],
-                y=[round(interp_point[1],3), 2.5],
-                mode='lines',
-                line=dict(color='orange', dash='dot'),
-                name='Вертикална линия от оранжева точка до y=2.5'
-            ))
-
-# --- Добавяне на невидим trace за втората ос (за да се покаже мащабът)
-fig.add_trace(go.Scatter(
-    x=[0, 1],
-    y=[None, None],  # y не влияе
-    mode='lines',
-    line=dict(color='rgba(0,0,0,0)'),
-    showlegend=False,
-    hoverinfo='skip',
-    xaxis='x2'  # Свързваме с втората ос
-))
 
 fig.update_layout(
-    title='Графика на изолинии',
-    xaxis=dict(
-        title='H/D',
-        showgrid=True,
-        zeroline=False,
-    ),
-    xaxis2=dict(
-        overlaying='x',
-        side='top',
-        range=[fig.layout.xaxis.range[0] if fig.layout.xaxis.range else None, 1],
-        showgrid=False,
-        zeroline=False,
-        tickvals=[0, 0.25, 0.5, 0.75, 1],
-        ticktext=['0', '0.25', '0.5', '0.75', '1'],
-        title='σr'
-    ),
-    yaxis=dict(
-        title='y',
-    ),
-    showlegend=False
+    title="Графика на изолиниите с интерполирана точка",
+    xaxis_title="H_n / D",
+    yaxis_title="y",
+    legend_title="Легенда",
+    width=900,
+    height=600
 )
 
 st.plotly_chart(fig)
-
-# Проверка дали x_interp_EiEd е дефинирана и не е None
-if ('x_interp_EiEd' in locals()) and (x_interp_EiEd is not None):
-    sigma_r = (x_interp_EiEd)/2
-    sigma_r_r = round(sigma_r,3)
-    st.markdown(f"**σr = {sigma_r_r}**")
-else:
-    st.markdown("**σr = -** (Няма изчислена стойност)")
