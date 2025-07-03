@@ -295,9 +295,10 @@ fig.update_layout(
     showlegend=False
 )
 st.plotly_chart(fig)
-# Проверка дали x_interp_EiEd е дефинирана и не е None
-if ('x_interp_EiEd' in locals()) and (x_interp_EiEd is not None):
-    sigma_r = (x_interp_EiEd)/2
+
+# Проверка дали x_intercept е дефинирана и не е None
+if ('x_intercept' in locals()) and (x_intercept is not None):
+    sigma_r = x_intercept / 2
     st.markdown(f"**σr = {sigma_r}**")
 else:
     st.markdown("**σr = -** (Няма изчислена стойност)")
