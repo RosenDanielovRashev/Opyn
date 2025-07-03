@@ -238,7 +238,7 @@ if not interp_error and y_at_ratio is not None:
                 x=[x_intercept, ratio_r],
                 y=[y_at_ratio, y_at_ratio],
                 mode='lines',
-                line=dict(color='orange', width=2, dash='solid'),
+                line=dict(color='orange', width=2, dash='dash'),
                 showlegend=False
             ))
 
