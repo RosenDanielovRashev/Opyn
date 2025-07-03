@@ -255,15 +255,13 @@ fig.update_layout(
         zeroline=False,
     ),
     xaxis2=dict(
-    overlaying='x',
-    side='top',
-    title='σ_r',  # <- Без LaTeX
-    titlefont=dict(size=16),
-    range=[0, 1],
-    showgrid=False,
-    zeroline=False,
-    tickvals=[0, 0.25, 0.5, 0.75, 1],
-    ticktext=['0', '0.25', '0.5', '0.75', '1']
+        overlaying='x',
+        side='top',
+        range=[fig.layout.xaxis.range[0] if fig.layout.xaxis.range else None, 1],
+        showgrid=False,
+        zeroline=False,
+        tickvals=[0, 0.25, 0.5, 0.75, 1],
+        ticktext=['0', '0.25', '0.5', '0.75', '1']
     ),
     yaxis=dict(
         title='y',
