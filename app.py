@@ -3,7 +3,7 @@ import pandas as pd
 import plotly.graph_objects as go
 import numpy as np
 
-st.title("Комбинирани изолинии с изчисление на Esr и H_n/D")
+st.title("Определяне опънното напрежение в междиен пласт от пътнатата конструкция")
 
 def to_subscript(number):
     subscripts = str.maketrans("0123456789", "₀₁₂₃₄₅₆₇₈₉")
