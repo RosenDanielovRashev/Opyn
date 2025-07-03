@@ -261,21 +261,17 @@ fig.update_layout(
     width=900,
     height=600
 )
-# Добавяне на невидим trace за xaxis2, за да се появи
+# --- Добавяне на невидим trace за втората ос (за да се покаже мащабът)
 fig.add_trace(go.Scatter(
     x=[0, 1],
-    y=[None, None],  # Не е важно
+    y=[None, None],  # y не влияе
     mode='lines',
     line=dict(color='rgba(0,0,0,0)'),
     showlegend=False,
     hoverinfo='skip',
-    xaxis='x2'  # Използва втората ос
+    xaxis='x2'  # Свързваме с втората ос
 ))
 
-# Определяне на границите на основната ос (ако са налични)
-xaxis_range = fig.layout.xaxis.range if fig.layout.xaxis.range else [0, 1]
-
-# Ъпдейт на layout с втората ос (xaxis2)
 fig.update_layout(
     title='Графика на изолинии',
     xaxis=dict(
@@ -286,31 +282,23 @@ fig.update_layout(
     xaxis2=dict(
         overlaying='x',
         side='top',
-        range=[xaxis_range[0], xaxis_range[1]],
+        range=[fig.layout.xaxis.range[0] if fig.layout.xaxis.range else None, 1],
         showgrid=False,
         zeroline=False,
-        tickvals=[round(i * 0.01, 2) for i in range(21)],  # 0 до 0.20
-        ticktext=[f"{round(i * 0.01, 2):.2f}" for i in range(21)],
-        title='σᵣ / p',
-        ticks="outside"
+        tickvals=[0, 0.25, 0.5, 0.75, 1],
+        ticktext=['0', '0.25', '0.5', '0.75', '1'],
+        title='σr'
     ),
     yaxis=dict(
         title='y',
     ),
-    showlegend=False,
-    height=600,
-    width=900
+    showlegend=False
 )
-
 st.plotly_chart(fig)
 
-# Изчисление на σr от x на оранжевата точка (ако съществува)
-if ('x_orange' in locals()) and (x_orange is not None):
-    sigma_r = round(x_orange / 2, 3)
-    x_val = round(x_orange, 3)
-    st.markdown(f"**Оранжева точка (x) = {x_val}**")
-    st.markdown(f"**σᵣ = x / 10 = {x_val} / 10 = {sigma_r}**")
+# Проверка дали x_intercept е дефинирана и не е None
+if ('x_intercept' in locals()) and (x_intercept is not None):
+    sigma_r = round(x_intercept / 2, 3)
+    st.markdown(f"**σr = {sigma_r}**")
 else:
-    st.markdown("**Оранжева точка (x) = -**")
-    st.markdown("**σᵣ = -** (Няма изчислена стойност)")
-
+    st.markdown("**σr = -** (Няма изчислена стойност)")
