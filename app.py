@@ -165,7 +165,7 @@ if not interp_error and y_at_ratio is not None:
         name='Вертикална линия на Hn/D'
     ))
 
-    # Добавяне на червена точка на пресечната точка
+    # Добавяне на червена точка на пресечната точка (интерполирана точка)
     fig.add_trace(go.Scatter(
         x=[ratio_r],
         y=[y_at_ratio],
@@ -224,12 +224,31 @@ if not interp_error and y_at_ratio is not None:
             x_intercept = None
 
         if x_intercept is not None:
+            # Оранжева точка вместо звезда
             fig.add_trace(go.Scatter(
                 x=[x_intercept],
                 y=[y_at_ratio],
                 mode='markers',
-                marker=dict(color='green', size=12, symbol='star'),
+                marker=dict(color='orange', size=12, symbol='circle'),
                 name='Пресечна точка с Ei/Ed'
+            ))
+
+            # Линия свързваща оранжевата точка и червената точка (интерполирана точка)
+            fig.add_trace(go.Scatter(
+                x=[x_intercept, ratio_r],
+                y=[y_at_ratio, y_at_ratio],
+                mode='lines',
+                line=dict(color='orange', width=2, dash='solid'),
+                showlegend=False
+            ))
+
+            # Вертикална линия от оранжевата точка нагоре до y=2.5
+            fig.add_trace(go.Scatter(
+                x=[x_intercept, x_intercept],
+                y=[y_at_ratio, 2.5],
+                mode='lines',
+                line=dict(color='orange', width=2, dash='dash'),
+                showlegend=False
             ))
         else:
             st.warning("⚠️ Не може да се намери пресечна точка с Ei/Ed изолиниите.")
