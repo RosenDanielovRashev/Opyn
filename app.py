@@ -282,11 +282,11 @@ fig.update_layout(
     xaxis2=dict(
         overlaying='x',
         side='top',
-        range=[fig.layout.xaxis.range[0] if fig.layout.xaxis.range else None, 1],
+        range=[fig.layout.xaxis.range[0] if fig.layout.xaxis.range else None, 0,2],
         showgrid=False,
         zeroline=False,
-        tickvals=[0, 0.25, 0.5, 0.75, 1],
-        ticktext=['0', '0.25', '0.5', '0.75', '1'],
+        tickvals=[0, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.10, 0.11, 0.12, 0.13, 0.14, 0.15, 0.16, 0.17, 0.18, 0.19, 0.20],
+        ticktext=['0', '0.01', '0.02', '0.03', '0.04', '0.05', '0.06', '0.07', '0.08', '0.09', '0.10', '0.11', '0.12', '0.13', '0.14', '0.15', '0.16', '0.17', '0.18', '0.19', '0.20'],
         title='σr'
     ),
     yaxis=dict(
@@ -296,9 +296,13 @@ fig.update_layout(
 )
 st.plotly_chart(fig)
 
-# Проверка дали x_intercept е дефинирана и не е None
-if ('x_intercept' in locals()) and (x_intercept is not None):
-    sigma_r = round(x_intercept / 2, 3)
-    st.markdown(f"**σr = {sigma_r}**")
+# Изчисление на σr от x на оранжевата точка (ако съществува)
+if ('x_orange' in locals()) and (x_orange is not None):
+    sigma_r = round(x_orange / 2, 3)
+    x_val = round(x_orange, 3)
+    st.markdown(f"**Оранжева точка (x) = {x_val}**")
+    st.markdown(f"**σᵣ = x / 10 = {x_val} / 10 = {sigma_r}**")
 else:
-    st.markdown("**σr = -** (Няма изчислена стойност)")
+    st.markdown("**Оранжева точка (x) = -**")
+    st.markdown("**σᵣ = -** (Няма изчислена стойност)")
+
