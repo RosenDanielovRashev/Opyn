@@ -122,24 +122,17 @@ if lower_index is not None:
     df_lower = df_new[df_new['sr_Ei'] == lower_sr].sort_values(by='H/D')
     df_upper = df_new[df_new['sr_Ei'] == upper_sr].sort_values(by='H/D')
 
-    def interp_xy_perpendicular(df, x0):
-        x_arr = df['H/D'].values
-        y_arr = df['y'].values
-        for j in range(len(x_arr)-1):
-            if x_arr[j] <= x0 <= x_arr[j+1]:
-                p1 = np.array([x_arr[j], y_arr[j]])
-                p2 = np.array([x_arr[j+1], y_arr[j+1]])
-                seg_vec = p2 - p1
-                seg_len = np.linalg.norm(seg_vec)
-                if seg_len == 0:
-                    return p1
-                t = (x0 - x_arr[j]) / (x_arr[j+1] - x_arr[j])
-                point_on_seg = p1 + t * seg_vec
-                return point_on_seg
-        if x0 < x_arr[0]:
-            return np.array([x_arr[0], y_arr[0]])
-        else:
-            return np.array([x_arr[-1], y_arr[-1]])
+   def interp_xy_perpendicular(df, x0):
+    x_arr = df['H/D'].values
+    y_arr = df['y'].values
+    for j in range(len(x_arr)-1):
+        if x_arr[j] <= x0 <= x_arr[j+1]:
+            y_interp = y_arr[j] + (y_arr[j+1] - y_arr[j]) * (x0 - x_arr[j]) / (x_arr[j+1] - x_arr[j])
+            return np.array([x0, y_interp])
+    if x0 < x_arr[0]:
+        return np.array([x_arr[0], y_arr[0]])
+    else:
+        return np.array([x_arr[-1], y_arr[-1]])
 
     point_lower = interp_xy_perpendicular(df_lower, target_Hn_D)
     point_upper = interp_xy_perpendicular(df_upper, target_Hn_D)
