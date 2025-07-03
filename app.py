@@ -122,7 +122,7 @@ if lower_index is not None:
     df_lower = df_new[df_new['sr_Ei'] == lower_sr].sort_values(by='H/D')
     df_upper = df_new[df_new['sr_Ei'] == upper_sr].sort_values(by='H/D')
 
-   def interp_xy_perpendicular(df, x0):
+    def interp_xy_perpendicular(df, x0):
     x_arr = df['H/D'].values
     y_arr = df['y'].values
     for j in range(len(x_arr)-1):
