@@ -162,16 +162,18 @@ if not interp_error and y_at_ratio is not None:
         y=[0, y_at_ratio],
         mode='lines',
         line=dict(color='blue', dash='dash'),
-        name='Вертикална линия на Hn/D'
+        name='Вертикална линия на Hn/D',
+        yaxis='y1'
     ))
 
-    # Добавяне на червена точка на пресечната точка
+    # Добавяне на червена точка на пресечната точка (Esr/Ei)
     fig.add_trace(go.Scatter(
         x=[ratio_r],
         y=[y_at_ratio],
         mode='markers',
         marker=dict(color='red', size=10),
-        name='Интерполирана точка'
+        name='Интерполирана точка',
+        yaxis='y1'
     ))
 
     # --- Търсене на пресечна точка с изолинии Ei/Ed (от df_original)
@@ -229,15 +231,69 @@ if not interp_error and y_at_ratio is not None:
                 y=[y_at_ratio],
                 mode='markers',
                 marker=dict(color='green', size=12, symbol='star'),
-                name='Пресечна точка с Ei/Ed'
+                name='Пресечна точка с Ei/Ed',
+                yaxis='y1'
             ))
         else:
             st.warning("⚠️ Не може да се намери пресечна точка с Ei/Ed изолиниите.")
 
+# Връщаме и втора ос (y2) със заглавие и оранжева точка + двете линии (сигма и отчитане)
+# Примерни стойности за тези елементи, добави ако имаш реални данни
+
+sigma_value = 5  # примерно, замени с истинска стойност
+otc_value = 3    # примерно, замени с истинска стойност
+sigma_x_range = [0, ratio_r]
+otc_x_range = [0, ratio_r]
+
+fig.add_trace(go.Scatter(
+    x=[0, ratio_r],
+    y=[sigma_value, sigma_value],
+    mode='lines',
+    line=dict(color='orange', dash='dot'),
+    name='Сигма линия',
+    yaxis='y2'
+))
+
+fig.add_trace(go.Scatter(
+    x=[0, ratio_r],
+    y=[otc_value, otc_value],
+    mode='lines',
+    line=dict(color='green', dash='dot'),
+    name='Линия отчитане',
+    yaxis='y2'
+))
+
+fig.add_trace(go.Scatter(
+    x=[ratio_r],
+    y=[sigma_value],
+    mode='markers',
+    marker=dict(color='orange', size=10),
+    name='Оранжева точка',
+    yaxis='y2'
+))
+
 fig.update_layout(
-    xaxis_title="Hn/D",
-    yaxis_title="y",
-    legend_title="Изолинии",
+    xaxis=dict(
+        title="Hn/D",
+        domain=[0.0, 0.85]
+    ),
+    yaxis=dict(
+        title="y (Esr/Ei и Ei/Ed)",
+        side='left',
+        range=[0, max(df_new['y'].max(), df_original['y'].max())*1.1],
+    ),
+    yaxis2=dict(
+        title="Втора ос (примерно)",
+        overlaying='y',
+        side='right',
+        range=[0, max(sigma_value, otc_value)*1.5],
+        showgrid=False,
+        zeroline=False
+    ),
+    legend=dict(
+        x=0.85,
+        y=1
+    ),
     template="plotly_white",
     width=900,
     height=600
