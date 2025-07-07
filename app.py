@@ -15,6 +15,10 @@ if "h_values" not in st.session_state:
     st.session_state.h_values = [4.0] * st.session_state.num_layers
 if "E_values" not in st.session_state:
     st.session_state.E_values = [1000.0] * st.session_state.num_layers
+if "Ed_values" not in st.session_state:
+    st.session_state.Ed_values = [100.0] * st.session_state.num_layers
+if "D_values" not in st.session_state:
+    st.session_state.D_values = [32.04] * st.session_state.num_layers
 
 # --- Брой пластове ---
 num_layers = st.number_input(
@@ -22,10 +26,13 @@ num_layers = st.number_input(
     min_value=2, step=1,
     value=st.session_state.num_layers
 )
+
 if num_layers != st.session_state.num_layers:
     st.session_state.num_layers = num_layers
     st.session_state.h_values = st.session_state.h_values[:num_layers] + [4.0]*(num_layers - len(st.session_state.h_values))
     st.session_state.E_values = st.session_state.E_values[:num_layers] + [1000.0]*(num_layers - len(st.session_state.E_values))
+    st.session_state.Ed_values = st.session_state.Ed_values[:num_layers] + [100.0]*(num_layers - len(st.session_state.Ed_values))
+    st.session_state.D_values = st.session_state.D_values[:num_layers] + [32.04]*(num_layers - len(st.session_state.D_values))
     st.session_state.current_layer = min(st.session_state.current_layer, num_layers - 1)
 
 # --- Навигация между пластове ---
@@ -42,15 +49,18 @@ with col3:
 layer_idx = st.session_state.current_layer
 st.subheader(f"🔧 Данни за пласт {layer_idx + 1} от {num_layers}")
 
-# --- Параметри ---
-D = st.selectbox("Избери D", options=[32.04, 34.0, 33.0], index=0)
-Ed = st.number_input("Ed (MPa)", value=100.0, step=0.1)
-
-# --- Въвеждане за текущ пласт ---
+# --- Параметри за текущ пласт ---
+D = st.selectbox("Избери D", options=[32.04, 34.0, 33.0],
+                 index=[32.04, 34.0, 33.0].index(st.session_state.D_values[layer_idx]), key=f"D_{layer_idx}")
+Ed = st.number_input("Ed (MPa)", value=st.session_state.Ed_values[layer_idx], step=0.1, key=f"Ed_{layer_idx}")
 h = st.number_input(f"h{layer_idx + 1} (cm):",
                     value=st.session_state.h_values[layer_idx], step=0.1, key=f"h_{layer_idx}")
 E = st.number_input(f"E{layer_idx + 1} (MPa):",
                     value=st.session_state.E_values[layer_idx], step=0.1, key=f"E_{layer_idx}")
+
+# --- Запазване на текущите стойности ---
+st.session_state.D_values[layer_idx] = D
+st.session_state.Ed_values[layer_idx] = Ed
 st.session_state.h_values[layer_idx] = h
 st.session_state.E_values[layer_idx] = E
 
@@ -65,10 +75,12 @@ Esr = weighted_sum_n_1 / sum_h_n_1 if sum_h_n_1 else 0
 H_n = h_array.sum()
 H_n_1 = sum_h_n_1
 En = E_array[-1]
+Ed_last = st.session_state.Ed_values[-1]
+D_last = st.session_state.D_values[-1]
 
-ratio = H_n / D if D else 0
+ratio = H_n / D_last if D_last else 0
 Esr_over_En = Esr / En if En else 0
-En_over_Ed = En / Ed if Ed else 0
+En_over_Ed = En / Ed_last if Ed_last else 0
 
 # --- Показване на формули и резултати ---
 st.markdown("### 📐 Формули и резултати")
@@ -77,12 +89,12 @@ st.latex(r"H_{n-1} = " + " + ".join([f"h_{i+1}" for i in range(len(h_array) - 1)
 st.latex(r"H_n = " + " + ".join([f"h_{i+1}" for i in range(len(h_array))]) +
          f" = {round(H_n,3)} cm")
 st.latex(r"Esr = \frac{\sum E_i h_i}{\sum h_i} = " + f"{round(Esr,3)} MPa")
-st.latex(r"\frac{H_n}{D} = " + f"{round(H_n,3)}/{round(D,3)} = {round(ratio,3)}")
+st.latex(r"\frac{H_n}{D} = " + f"{round(H_n,3)}/{round(D_last,3)} = {round(ratio,3)}")
 st.latex(r"E_n = " + f"{round(En,3)} MPa")
 st.latex(r"\frac{Esr}{E_n} = " + f"{round(Esr_over_En,3)}")
 st.latex(r"\frac{E_n}{Ed} = " + f"{round(En_over_Ed,3)}")
 
-# --- Графична част ---
+# --- Зареждане на CSV данни ---
 try:
     df_original = pd.read_csv("danni.csv")
     df_new = pd.read_csv("Оразмеряване на опън за междиннен плстH_D.csv")
@@ -91,6 +103,7 @@ except Exception as e:
     st.error(f"Грешка при зареждане на CSV: {e}")
     st.stop()
 
+# --- Графика ---
 fig = go.Figure()
 
 for lvl in sorted(df_original['Ei/Ed'].unique()):
@@ -103,7 +116,6 @@ for lvl in sorted(df_new['sr_Ei'].unique()):
 y_point = None
 sr_levels = sorted(df_new['sr_Ei'].unique())
 if sr_levels[0] <= Esr_over_En <= sr_levels[-1]:
-    # Интерполация
     lows = [lvl for lvl in sr_levels if lvl <= Esr_over_En]
     highs = [lvl for lvl in sr_levels if lvl >= Esr_over_En]
     low = max(lows)
@@ -124,4 +136,3 @@ if y_point is not None:
     st.markdown(f"### 🔴 Изчислено σr = {sigma_r}")
 else:
     st.warning("⚠️ Няма пресечна точка – σr не може да се определи.")
-
