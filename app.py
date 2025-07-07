@@ -9,24 +9,48 @@ def to_subscript(number):
     subscripts = str.maketrans("0123456789", "₀₁₂₃₄₅₆₇₈₉")
     return str(number).translate(subscripts)
 
+# Добавяне на бутон за избор на проверка
+analysis_type = st.radio("Избери тип проверка:", 
+                        ["Проверка за всички пластове", "Проверка за отделни пластове"],
+                        horizontal=True)
+
 # Входни параметри
-n = st.number_input("Брой пластове (n)", min_value=2, step=1, value=3)
+n = st.number_input("Брой пластове (n)", min_value=2, step=1, value=4 if analysis_type == "Проверка за отделни пластове" else 3)
 D = st.selectbox("Избери D", options=[32.04, 34.0], index=0)
 
 # Въвеждане на h_i и E_i за всеки пласт
 st.markdown("### Въведи стойности за всеки пласт")
 h_values = []
 E_values = []
-cols = st.columns(2)
-for i in range(n):
-    with cols[0]:
-        h = st.number_input(f"h{to_subscript(i+1)}", value=4.0, step=0.1, key=f"h_{i}")
-        h_values.append(h)
-    with cols[1]:
-        E = st.number_input(f"E{to_subscript(i+1)}", value=1000.0, step=0.1, key=f"E_{i}")
-        E_values.append(E)
 
-Ed = st.number_input("Ed", value=100.0, step=0.1)
+if analysis_type == "Проверка за всички пластове":
+    cols = st.columns(2)
+    for i in range(n):
+        with cols[0]:
+            h = st.number_input(f"h{to_subscript(i+1)}", value=4.0, step=0.1, key=f"h_{i}")
+            h_values.append(h)
+        with cols[1]:
+            E = st.number_input(f"E{to_subscript(i+1)}", value=1200.0 if i == 0 else (1000.0 if i == 1 else (800.0 if i == 2 else 400.0)), 
+                              step=0.1, key=f"E_{i}")
+            E_values.append(E)
+else:
+    # Проверка за отделни пластове
+    selected_layer = st.selectbox("Избери пласт за проверка", options=[f"Пласт {i+1}" for i in range(n)], index=0)
+    layer_idx = int(selected_layer.split()[-1]) - 1
+    
+    cols = st.columns(2)
+    with cols[0]:
+        h = st.number_input(f"h{to_subscript(layer_idx+1)}", value=4.0, step=0.1, key=f"h_{layer_idx}")
+        h_values = [4.0] * n  # Default values for all layers
+        h_values[layer_idx] = h
+    with cols[1]:
+        E = st.number_input(f"E{to_subscript(layer_idx+1)}", 
+                          value=1200.0 if layer_idx == 0 else (1000.0 if layer_idx == 1 else (800.0 if layer_idx == 2 else 400.0)), 
+                          step=0.1, key=f"E_{layer_idx}")
+        E_values = [1200.0, 1000.0, 800.0, 400.0][:n]  # Default values for all layers
+        E_values[layer_idx] = E
+
+Ed = st.number_input("Ed", value=30.0, step=0.1)
 Ed_r = round(Ed, 3)
 
 # Бутон за изчисления и визуализация
@@ -117,7 +141,6 @@ if st.button("Покажи графиката"):
             ))
 
     # --- Интерполация на y за Esr/Ei и Hn/D
-
     sr_Ei_values = sorted(df_new['sr_Ei'].unique())
     target_sr_Ei = Esr_over_En_r
     target_Hn_D = ratio_r
@@ -177,7 +200,6 @@ if st.button("Покажи графиката"):
         ))
 
         # --- Търсене на пресечна точка с изолинии Ei/Ed (от df_original)
-
         def interp_x_for_y(df, y_target):
             x_arr = df['H/D'].values
             y_arr = df['y'].values
