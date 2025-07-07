@@ -14,6 +14,8 @@ if 'layer_results' not in st.session_state:
     st.session_state.layer_results = {}
 if 'manual_sigma_values' not in st.session_state:
     st.session_state.manual_sigma_values = {}
+if 'check_results' not in st.session_state:
+    st.session_state.check_results = {}
 
 # Input parameters
 n = st.number_input("Брой пластове (n)", min_value=2, step=1, value=4)
@@ -257,12 +259,11 @@ if layer_idx in st.session_state.layer_results:
         st.plotly_chart(fig, use_container_width=True)
 
         st.image("Допустими опънни напрежения.png", caption="Допустими опънни напрежения", width=800)
+        
         # Проверка дали x_intercept е дефинирана и не е None
         if ('x_intercept' in locals()) and (x_intercept is not None):
             sigma_r = round(x_intercept / 2, 3)
             st.markdown(f"**Изчислено σr = {sigma_r}**")
-
-
             
             # Запазваме стойността в session_state
             st.session_state.final_sigma = sigma_r
@@ -297,10 +298,20 @@ if layer_idx in st.session_state.layer_results:
             
             # Бутон за проверка
             if st.button(f"Провери дали изчисленото σr ≤ ръчно отчетеното за пласт {layer_idx+1}"):
-                if sigma_r <= manual_value:
-                    st.success(f"✅ Проверката е удовлетворена: {sigma_r:.3f} ≤ {manual_value:.3f}")
+                check_passed = sigma_r <= manual_value
+                st.session_state.check_results[f'check_{layer_idx}'] = {
+                    'passed': check_passed,
+                    'sigma_r': sigma_r,
+                    'manual_value': manual_value
+                }
+            
+            # Показваме резултата от проверката, ако има такъв
+            if f'check_{layer_idx}' in st.session_state.check_results:
+                check = st.session_state.check_results[f'check_{layer_idx}']
+                if check['passed']:
+                    st.success(f"✅ Проверката е удовлетворена: {check['sigma_r']:.3f} ≤ {check['manual_value']:.3f}")
                 else:
-                    st.error(f"❌ Проверката НЕ е удовлетворена: {sigma_r:.3f} > {manual_value:.3f}")
+                    st.error(f"❌ Проверката НЕ е удовлетворена: {check['sigma_r']:.3f} > {check['manual_value']:.3f}")
         else:
             st.markdown("**σr = -** (Няма изчислена стойност)")
 
