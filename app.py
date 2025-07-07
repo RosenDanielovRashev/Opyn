@@ -294,15 +294,15 @@ if layer_idx in st.session_state.layer_results:
             )
         else:
             st.markdown("**σr = -** (Няма изчислена стойност)")
-            # Бутон за проверка на условието
-            if st.button("Провери дали σR ≤ ръчно въведена стойност"):
-                if calculated_sigma is None:
-                    st.warning("❗ Няма изчислена стойност σR за проверка.")
+        # Бутон за проверка на условието
+        if st.button("Провери дали σR ≤ ръчно въведена стойност"):
+            if calculated_sigma is None:
+                st.warning("❗ Няма изчислена стойност σR за проверка.")
+            else:
+                if calculated_sigma <= manual_value:
+                    st.success(f"✅ Проверката е удовлетворена: {calculated_sigma:.3f} ≤ {manual_value:.3f}")
                 else:
-                    if calculated_sigma <= manual_value:
-                        st.success(f"✅ Проверката е удовлетворена: {calculated_sigma:.3f} ≤ {manual_value:.3f}")
-                    else:
-                        st.error(f"❌ Проверката НЕ е удовлетворена: {calculated_sigma:.3f} > {manual_value:.3f}")
+                    st.error(f"❌ Проверката НЕ е удовлетворена: {calculated_sigma:.3f} > {manual_value:.3f}")
 
             # Добавяме и за случаите когато няма изчислена стойност
             st.markdown(
