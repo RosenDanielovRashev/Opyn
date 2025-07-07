@@ -8,7 +8,7 @@ st.set_page_config(layout="centered")
 st.markdown("""
     <style>
     .block-container {
-        max-width: 1000px;
+        max-width: 900px;
         padding-top: 2rem;
         padding-right: 2rem;
         padding-left: 2rem;
