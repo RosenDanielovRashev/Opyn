@@ -12,6 +12,8 @@ def to_subscript(number):
 # Initialize session state
 if 'layer_results' not in st.session_state:
     st.session_state.layer_results = {}
+if 'manual_sigma_values' not in st.session_state:
+    st.session_state.manual_sigma_values = {}
 
 # Input parameters
 n = st.number_input("Брой пластове (n)", min_value=2, step=1, value=4)
@@ -252,76 +254,52 @@ if layer_idx in st.session_state.layer_results:
             showlegend=False
         )
 
+        st.plotly_chart(fig, use_container_width=True)
+
         # Проверка дали x_intercept е дефинирана и не е None
         if ('x_intercept' in locals()) and (x_intercept is not None):
             sigma_r = round(x_intercept / 2, 3)
-            st.markdown(f"**σr = {sigma_r}**")
-    
-        # Запазваме стойността в session_state за по-късна употреба
-        st.session_state.final_sigma = sigma_r
-    
-        # Лек акцент за заглавие
-        st.markdown(
-            """
-            <div style="background-color: #f0f9f0; padding: 10px; border-radius: 5px;">
-                <h3 style="color: #3a6f3a; margin: 0;">Ръчно отчитане σR спрямо Таблица 9.7</h3>
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
+            st.markdown(f"**Изчислено σr = {sigma_r}**")
+            
+            # Запазваме стойността в session_state
+            st.session_state.final_sigma = sigma_r
+            
+            # Секция за ръчно въвеждане
+            st.markdown(
+                """
+                <div style="background-color: #f0f9f0; padding: 10px; border-radius: 5px;">
+                    <h3 style="color: #3a6f3a; margin: 0;">Ръчно отчитане σR спрямо Таблица 9.7</h3>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
 
-        # CSS за стилизиране на number_input
-        st.markdown("""
-        <style>
-        div[data-baseweb="input"] > input {
-            width: 70px !important;
-            padding-left: 5px !important;
-            padding-right: 5px !important;
-            text-align: left !important;
-        }
-        </style>
-        """, unsafe_allow_html=True)
+            # Инициализираме ръчната стойност за този пласт, ако не съществува
+            if f'manual_sigma_{layer_idx}' not in st.session_state.manual_sigma_values:
+                st.session_state.manual_sigma_values[f'manual_sigma_{layer_idx}'] = sigma_r
 
-        # Полето за ръчно въвеждане на стойност
-        manual_value = st.number_input(
-            label="Въведете ръчно отчетена стойност σR [MPa]",
-            min_value=0.0,
-            max_value=20.0,
-            value=float(sigma_r),  # Автоматично попълва изчислената стойност
-            step=0.1,
-            key="manual_sigma_input_1",
-            label_visibility="visible"
-        )
-    
-        # Бутон за проверка на условието
-        if st.button("Провери дали σR ≤ ръчно въведена стойност"):
-            if sigma_r <= manual_value:
-                st.success(f"✅ Проверката е удовлетворена: {sigma_r:.3f} ≤ {manual_value:.3f}")
-            else:
-                st.error(f"❌ Проверката НЕ е удовлетворена: {sigma_r:.3f} > {manual_value:.3f}")
+            # Поле за ръчно въвеждане
+            manual_value = st.number_input(
+                label="Въведете ръчно отчетена стойност σR [MPa]",
+                min_value=0.0,
+                max_value=20.0,
+                value=st.session_state.manual_sigma_values.get(f'manual_sigma_{layer_idx}', sigma_r),
+                step=0.1,
+                key=f"manual_sigma_input_{layer_idx}",
+                label_visibility="visible"
+            )
+            
+            # Запазваме ръчно въведената стойност
+            st.session_state.manual_sigma_values[f'manual_sigma_{layer_idx}'] = manual_value
+            
+            # Бутон за проверка
+            if st.button(f"Провери дали изчисленото σr ≤ ръчно отчетеното за пласт {layer_idx+1}"):
+                if sigma_r <= manual_value:
+                    st.success(f"✅ Проверката е удовлетворена: {sigma_r:.3f} ≤ {manual_value:.3f}")
+                else:
+                    st.error(f"❌ Проверката НЕ е удовлетворена: {sigma_r:.3f} > {manual_value:.3f}")
         else:
             st.markdown("**σr = -** (Няма изчислена стойност)")
-    
-        # Добавяме и за случаите когато няма изчислена стойност
-        st.markdown(
-            """
-            <div style="background-color: #f0f9f0; padding: 10px; border-radius: 5px;">
-                <h3 style="color: #3a6f3a; margin: 0;">Ръчно отчитане σR спрямо Таблица 9.7</h3>
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
-    
-        manual_value = st.number_input(
-            label="Въведете ръчно отчетена стойност σR [MPa]",
-            min_value=0.0,
-            max_value=20.0,
-            value=1.2,
-            step=0.1,
-            key="manual_sigma_input_2",
-            label_visibility="visible"
-        )
-        st.plotly_chart(fig, use_container_width=True)
 
     except Exception as e:
         st.error(f"Грешка при визуализацията: {e}")
