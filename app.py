@@ -208,8 +208,8 @@ if layer_idx in st.session_state.layer_results:
                             ))
 
                             fig.add_trace(go.Scatter(
-                                x=[x_intercept, 2.5],
-                                y=[y_at_ratio, 0],
+                                x=[x_intercept, x_intercept],   # една и съща X, за вертикална линия
+                                y=[y_at_ratio, 2.5],            # от текущото y до 2.5 по y
                                 mode='lines',
                                 line=dict(color='purple', dash='dash'),
                                 name='Линия от оранжева точка до 2.5'
