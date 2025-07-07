@@ -106,6 +106,9 @@ if layer_idx in st.session_state.layer_results:
     st.latex(fr"\frac{{Esr}}{{E_{{{layer_idx+1}}}}} = {results['Esr_over_En_r']}")
     st.latex(fr"\frac{{E_{{{layer_idx+1}}}}}{{Ed_{{{layer_idx+1}}}}} = \frac{{{results['En_r']}}}{{{results['Ed_r']}}} = {results['En_over_Ed_r']}")
 
+    # Определяне на sigma_r по подразбиране, за да няма грешка
+    sigma_r = None
+
     # Visualization
     try:
         df_original = pd.read_csv("danni.csv")
@@ -186,142 +189,46 @@ if layer_idx in st.session_state.layer_results:
                                 if Ei_Ed_values[i] < Ei_Ed_target < Ei_Ed_values[i+1]:
                                     df_lower = df_original[df_original['Ei/Ed'] == Ei_Ed_values[i]].sort_values(by='H/D')
                                     df_upper = df_original[df_original['Ei/Ed'] == Ei_Ed_values[i+1]].sort_values(by='H/D')
-                                    
+
                                     x_lower = np.interp(y_at_ratio, df_lower['y'], df_lower['H/D'])
                                     x_upper = np.interp(y_at_ratio, df_upper['y'], df_upper['H/D'])
-                                    
+
                                     x_intercept = x_lower + (x_upper - x_lower) * (Ei_Ed_target - Ei_Ed_values[i]) / (Ei_Ed_values[i+1] - Ei_Ed_values[i])
                                     break
 
                         if x_intercept is not None:
+                            # Оранжева точка
                             fig.add_trace(go.Scatter(
                                 x=[x_intercept], y=[y_at_ratio],
-                                mode='markers', marker=dict(color='orange', size=12),
+                                mode='markers', marker=dict(color='orange', size=10),
                                 name='Пресечна точка'
                             ))
-                            # Хоризонтална линия между червената и оранжевата точка
-                            fig.add_trace(go.Scatter(
-                                x=[target_Hn_D, x_intercept],
-                                y=[y_at_ratio, y_at_ratio],
-                                mode='lines',
-                                line=dict(color='green', dash='dash'),
-                                name='Линия между червена и оранжева точка'
-                            ))
 
-                            # Вертикална линия от оранжева точка до y=2.5
-                            fig.add_trace(go.Scatter(
-                                x=[x_intercept, x_intercept],
-                                y=[y_at_ratio, 2.5],
-                                mode='lines',
-                                line=dict(color='purple', dash='dash'),
-                                name='Вертикална линия до y=2.5'
-                            ))
+                            # Изчисляване sigma_r
+                            sigma_r = round(x_intercept / 2, 3)
+                            st.markdown(f"**σr = {sigma_r} MPa**")
+                            st.session_state.final_sigma = sigma_r
 
-        # --- Добавяне на невидим trace за втората ос (за да се покаже мащабът)
-        fig.add_trace(go.Scatter(
-            x=[0, 1],
-            y=[None, None],  # y не влияе
-            mode='lines',
-            line=dict(color='rgba(0,0,0,0)'),
-            showlegend=False,
-            hoverinfo='skip',
-            xaxis='x2'  # Свързваме с втората ос
-        ))
-
-        fig.update_layout(
-            title='Графика на изолинии',
-            xaxis=dict(
-                title='H/D',
-                showgrid=True,
-                zeroline=False,
-            ),
-            xaxis2=dict(
-                overlaying='x',
-                side='top',
-                range=[fig.layout.xaxis.range[0] if fig.layout.xaxis.range else 0, 1],
-                showgrid=False,
-                zeroline=False,
-                tickvals=[0, 0.25, 0.5, 0.75, 1],
-                ticktext=['0', '0.25', '0.5', '0.75', '1'],
-                title='σr'
-            ),
-            yaxis=dict(
-                title='y',
-                range=[0, 3]
-            ),
-            showlegend=False
-        )
-
-        # Проверка дали x_intercept е дефинирана и не е None
-        if ('x_intercept' in locals()) and (x_intercept is not None):
-            sigma_r = round(x_intercept / 2, 3)
-            st.markdown(f"**σr = {sigma_r}**")
-    
-        # Запазваме стойността в session_state за по-късна употреба
-        st.session_state.final_sigma = sigma_r
-    
-        # Лек акцент за заглавие
-        st.markdown(
-            """
-            <div style="background-color: #f0f9f0; padding: 10px; border-radius: 5px;">
-                <h3 style="color: #3a6f3a; margin: 0;">Ръчно отчитане σR спрямо Таблица 9.7</h3>
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
-
-        # CSS за стилизиране на number_input
-        st.markdown("""
-        <style>
-        div[data-baseweb="input"] > input {
-            width: 70px !important;
-            padding-left: 5px !important;
-            padding-right: 5px !important;
-            text-align: left !important;
-        }
-        </style>
-        """, unsafe_allow_html=True)
-
-        # Полето за ръчно въвеждане на стойност
-        manual_value = st.number_input(
-            label="Въведете ръчно отчетена стойност σR [MPa]",
-            min_value=0.0,
-            max_value=20.0,
-            value=float(sigma_r),  # Автоматично попълва изчислената стойност
-            step=0.1,
-            key="manual_sigma_input_1",
-            label_visibility="visible"
-        )
-    
-        # Бутон за проверка на условието
-        if st.button("Провери дали σR ≤ ръчно въведена стойност"):
-            if sigma_r <= manual_value:
-                st.success(f"✅ Проверката е удовлетворена: {sigma_r:.3f} ≤ {manual_value:.3f}")
-            else:
-                st.error(f"❌ Проверката НЕ е удовлетворена: {sigma_r:.3f} > {manual_value:.3f}")
-        else:
-            st.markdown("**σr = -** (Няма изчислена стойност)")
-    
-        # Добавяме и за случаите когато няма изчислена стойност
-        st.markdown(
-            """
-            <div style="background-color: #f0f9f0; padding: 10px; border-radius: 5px;">
-                <h3 style="color: #3a6f3a; margin: 0;">Ръчно отчитане σR спрямо Таблица 9.7</h3>
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
-    
-        manual_value = st.number_input(
-            label="Въведете ръчно отчетена стойност σR [MPa]",
-            min_value=0.0,
-            max_value=20.0,
-            value=1.2,
-            step=0.1,
-            key="manual_sigma_input_2",
-            label_visibility="visible"
-        )
         st.plotly_chart(fig, use_container_width=True)
 
-    except Exception as e:
-        st.error(f"Грешка при визуализацията: {e}")
+    except FileNotFoundError:
+        st.warning("Файловете с данни не са намерени (danni.csv или Оразмеряване на опън за междиннен плстH_D.csv).")
+
+    # Ако sigma_r не е изчислена, дефинираме я с 0
+    if sigma_r is None:
+        sigma_r = 0.0
+        st.session_state.final_sigma = sigma_r
+
+    # Въвеждане на ръчно въведена стойност sigma_r
+    manual_value = st.number_input(
+        label="Въведете ръчно отчетена стойност σR [MPa]",
+        min_value=0.0,
+        max_value=20.0,
+        value=float(st.session_state.final_sigma),
+        step=0.1,
+        key="manual_sigma_input_1",
+        label_visibility="visible"
+    )
+
+else:
+    st.info("Изберете пласт и натиснете бутона за изчисление.")
