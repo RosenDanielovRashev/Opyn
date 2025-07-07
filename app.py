@@ -227,7 +227,39 @@ if layer_idx in st.session_state.layer_results:
             height=600
         )
         fig.update_xaxes(range=[0, max(3, 2.5)])
+# --- Добавяне на невидим trace за втората ос (за да се покаже мащабът)
+fig.add_trace(go.Scatter(
+    x=[0, 1],
+    y=[None, None],  # y не влияе
+    mode='lines',
+    line=dict(color='rgba(0,0,0,0)'),
+    showlegend=False,
+    hoverinfo='skip',
+    xaxis='x2'  # Свързваме с втората ос
+))
 
+fig.update_layout(
+    title='Графика на изолинии',
+    xaxis=dict(
+        title='H/D',
+        showgrid=True,
+        zeroline=False,
+    ),
+    xaxis2=dict(
+        overlaying='x',
+        side='top',
+        range=[fig.layout.xaxis.range[0] if fig.layout.xaxis.range else None, 1],
+        showgrid=False,
+        zeroline=False,
+        tickvals=[0, 0.25, 0.5, 0.75, 1],
+        ticktext=['0', '0.25', '0.5', '0.75', '1'],
+        title='σr'
+    ),
+    yaxis=dict(
+        title='y',
+    ),
+    showlegend=False
+)
         st.plotly_chart(fig, use_container_width=True)
     except Exception as e:
         st.error(f"Грешка при зареждане на данните: {str(e)}")
