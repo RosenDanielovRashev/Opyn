@@ -289,7 +289,7 @@ if layer_idx in st.session_state.layer_results:
             max_value=20.0,
             value=float(sigma_r),  # Автоматично попълва изчислената стойност
             step=0.1,
-            key="manual_sigma_input",
+            key="manual_sigma_input_1",
             label_visibility="visible"
         )
     
@@ -318,7 +318,7 @@ if layer_idx in st.session_state.layer_results:
             max_value=20.0,
             value=1.2,
             step=0.1,
-            key="manual_sigma_input",
+            key="manual_sigma_input_2",
             label_visibility="visible"
         )
         st.plotly_chart(fig, use_container_width=True)
