@@ -199,6 +199,15 @@ if layer_idx in st.session_state.layer_results:
                                 mode='markers', marker=dict(color='orange', size=12),
                                 name='Пресечна точка'
                             ))
+                            # Хоризонтална линия между червената и оранжевата точка
+                            fig.add_trace(go.Scatter(
+                                x=[target_Hn_D, x_intercept],
+                                y=[y_at_ratio, y_at_ratio],
+                                mode='lines',
+                                line=dict(color='green', dash='dash'),
+                                name='Линия между червена и оранжева точка'
+                            ))
+
 
                             # Вертикална линия от оранжева точка до y=2.5
                             fig.add_trace(go.Scatter(
