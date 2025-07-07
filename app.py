@@ -208,7 +208,6 @@ if layer_idx in st.session_state.layer_results:
                                 name='Линия между червена и оранжева точка'
                             ))
 
-
                             # Вертикална линия от оранжева точка до y=2.5
                             fig.add_trace(go.Scatter(
                                 x=[x_intercept, x_intercept],
@@ -252,12 +251,69 @@ if layer_idx in st.session_state.layer_results:
             ),
             showlegend=False
         )
+
         # Проверка дали x_intercept е дефинирана и не е None
         if ('x_intercept' in locals()) and (x_intercept is not None):
             sigma_r = round(x_intercept / 2, 3)
             st.markdown(f"**σr = {sigma_r}**")
+            
+            # Запазваме стойността в session_state за по-късна употреба
+            st.session_state.final_sigma = sigma_r
+            
+            # Лек акцент за заглавие
+            st.markdown(
+                """
+                <div style="background-color: #f0f9f0; padding: 10px; border-radius: 5px;">
+                    <h3 style="color: #3a6f3a; margin: 0;">Ръчно отчитане σR спрямо Таблица 9.7</h3>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+
+            # CSS за стилизиране на number_input
+            st.markdown("""
+            <style>
+            div[data-baseweb="input"] > input {
+                width: 70px !important;
+                padding-left: 5px !important;
+                padding-right: 5px !important;
+                text-align: left !important;
+            }
+            </style>
+            """, unsafe_allow_html=True)
+
+            # Полето за ръчно въвеждане на стойност
+            manual_value = st.number_input(
+                label="Въведете ръчно отчетена стойност σR [MPa]",
+                min_value=0.0,
+                max_value=20.0,
+                value=float(sigma_r),  # Автоматично попълва изчислената стойност
+                step=0.1,
+                key="manual_sigma_input",
+                label_visibility="visible"
+            )
         else:
             st.markdown("**σr = -** (Няма изчислена стойност)")
+            
+            # Добавяме и за случаите когато няма изчислена стойност
+            st.markdown(
+                """
+                <div style="background-color: #f0f9f0; padding: 10px; border-radius: 5px;">
+                    <h3 style="color: #3a6f3a; margin: 0;">Ръчно отчитане σR спрямо Таблица 9.7</h3>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+            
+            manual_value = st.number_input(
+                label="Въведете ръчно отчетена стойност σR [MPa]",
+                min_value=0.0,
+                max_value=20.0,
+                value=1.2,
+                step=0.1,
+                key="manual_sigma_input",
+                label_visibility="visible"
+            )
 
         st.plotly_chart(fig, use_container_width=True)
 
