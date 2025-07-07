@@ -38,7 +38,7 @@ for i in range(n):
 
 # Layer selection
 st.markdown("### Избери пласт за проверка")
-selected_layer = st.selectbox("Пласт за проверка", options=[f"Пласт {i+1}" for i in range(n)], index=n-1)
+selected_layer = st.selectbox("Пласт за проверка", options=[f"Пласт {i+1}" for i in range(2, n)], index=n-3 if n > 2 else 0)
 layer_idx = int(selected_layer.split()[-1]) - 1
 
 # Calculation function
