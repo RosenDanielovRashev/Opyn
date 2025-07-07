@@ -7,11 +7,8 @@ st.set_page_config(layout="centered")
 st.markdown("""
     <style>
     div.stButton > button {
-        padding-top: 4px;
-        padding-bottom: 4px;
-        height: 32px;
-        font-size: 14px;
-        border-radius: 4px;
+        padding: 4px 10px;  /* по-малко отгоре и отдолу, нормално отстрани */
+        height: 30px;       /* по-ниска височина */
     }
     </style>
 """, unsafe_allow_html=True)
