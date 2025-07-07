@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
-import plotly.graph_objects as go
 import numpy as np
+import plotly.graph_objects as go
 
 st.title("Определяне опънното напрежение в междинен пласт от пътната конструкция фиг.9.3")
 
@@ -9,23 +9,15 @@ def to_subscript(number):
     subscripts = str.maketrans("0123456789", "₀₁₂₃₄₅₆₇₈₉")
     return str(number).translate(subscripts)
 
-# --- Инициализация на session_state за резултати и индекс ---
 if "results" not in st.session_state:
     st.session_state["results"] = []
 if "current_result_idx" not in st.session_state:
     st.session_state["current_result_idx"] = -1
 
 def calculate_for_layer(layer_idx):
-    # layer_idx е 0-базирано (0..n-1)
-    # Вземаме данните от текущото въвеждане за пластове и параметри
-    # Ако layer_idx е извън обхват, връщаме None
-    
     if layer_idx < 0 or layer_idx >= n:
         return None
     
-    # Изчисления от оригиналния код за пласт layer_idx
-    
-    # Параметри
     sum_h_n_1 = h_array[:-1].sum()
     weighted_sum_n_1 = np.sum(E_array[:-1] * h_array[:-1])
     Esr = weighted_sum_n_1 / sum_h_n_1 if sum_h_n_1 != 0 else 0
@@ -39,7 +31,6 @@ def calculate_for_layer(layer_idx):
     ratio = H_n / D if D != 0 else 0
     ratio_r = round(ratio, 3)
 
-    # За избрания пласт
     En = E_array[layer_idx]
     En_r = round(En, 3)
     
@@ -50,19 +41,17 @@ def calculate_for_layer(layer_idx):
     
     En_over_Ed = En / Ed if Ed != 0 else 0
     En_over_Ed_r = round(En_over_Ed, 3)
-    
-    # Зареждане на данни
+
+    # Тук зареждам csv файлове и правя интерполации както преди
     df_original = pd.read_csv("danni.csv")
     df_new = pd.read_csv("Оразмеряване на опън за междиннен плстH_D.csv")
     df_new.rename(columns={'Esr/Ei': 'sr_Ei'}, inplace=True)
     
-    # Изчисляване на y_at_ratio и x_intercept от твоя код
     sr_Ei_values = sorted(df_new['sr_Ei'].unique())
     target_sr_Ei = Esr_over_En_r
     target_Hn_D = ratio_r
 
     y_at_ratio = None
-    interp_error = False
 
     if target_sr_Ei < sr_Ei_values[0] or target_sr_Ei > sr_Ei_values[-1]:
         y_at_ratio = None
@@ -150,7 +139,7 @@ def calculate_for_layer(layer_idx):
         "D": D
     }
 
-# Входни параметри
+# Входни данни
 n = st.number_input("Брой пластове (n)", min_value=2, step=1, value=3)
 D = st.selectbox("Избери D", options=[32.04, 34.0, 33.0], index=0)
 
@@ -171,7 +160,6 @@ E_array = np.array(E_values)
 
 Ed = st.number_input("Ed", value=100.0, step=0.1)
 
-# Навигационни функции
 def prev_result():
     if st.session_state["current_result_idx"] > 0:
         st.session_state["current_result_idx"] -= 1
@@ -186,7 +174,6 @@ with col_nav1:
 with col_nav2:
     st.button("Следващ →", on_click=next_result)
 
-# Бутон за изчисляване на пласт n
 if st.button(f"Изчисли опън за пласт {n}"):
     res = calculate_for_layer(n-1)
     if res is not None:
@@ -194,7 +181,6 @@ if st.button(f"Изчисли опън за пласт {n}"):
         st.session_state["current_result_idx"] = len(st.session_state["results"]) - 1
         st.success(f"Добавено изчисление за пласт {n}")
 
-# Бутон за изчисляване на съседен пласт (n-1)
 if n > 1:
     if st.button(f"Изчисли опън за съседен пласт {n-1}"):
         res = calculate_for_layer(n-2)
@@ -203,10 +189,9 @@ if n > 1:
             st.session_state["current_result_idx"] = len(st.session_state["results"]) - 1
             st.success(f"Добавено изчисление за пласт {n-1}")
 
-# Показване на текущо избраното изчисление
 if st.session_state["results"] and st.session_state["current_result_idx"] >= 0:
     current = st.session_state["results"][st.session_state["current_result_idx"]]
-    st.markdown(f"### Показване на изчисление #{st.session_state['current_result_idx'] + 1} (Пласт {current['пласт']})")
+    st.markdown(f"### Изчисление #{st.session_state['current_result_idx'] + 1} (Пласт {current['пласт']})")
     st.write(f"Hₙ₋₁ = {current['H_n_1']}")
     st.write(f"Hₙ = {current['H_n']}")
     st.write(f"Esr = {current['Esr']}")
@@ -219,7 +204,28 @@ if st.session_state["results"] and st.session_state["current_result_idx"] >= 0:
     st.write(f"x пресечна точка = {current['x_intercept']}")
     st.markdown(f"**σr = {current['σr'] if current['σr'] is not None else '-'}**")
 
-# Бутон за изчистване на всички резултати
+    # Графики
+    st.markdown("### Графики")
+
+    # Графика на височини на пластовете
+    fig_h = go.Figure()
+    fig_h.add_trace(go.Bar(x=[f"h{to_subscript(i+1)}" for i in range(n)], y=current['h_values'], name="h (дебелина)"))
+    fig_h.update_layout(title="Дебелина на пластовете (h)", yaxis_title="h [cm]")
+    st.plotly_chart(fig_h, use_container_width=True)
+
+    # Графика на модули на пластовете
+    fig_E = go.Figure()
+    fig_E.add_trace(go.Bar(x=[f"E{to_subscript(i+1)}" for i in range(n)], y=current['E_values'], name="E (модул на еластичност)"))
+    fig_E.update_layout(title="Модул на еластичност на пластовете (E)", yaxis_title="E [MPa]")
+    st.plotly_chart(fig_E, use_container_width=True)
+
+    # Ако има σr, показваме го като линия за избрания пласт
+    if current['σr'] is not None:
+        fig_sigma = go.Figure()
+        fig_sigma.add_trace(go.Bar(x=[f"Пласт {current['пласт']}"], y=[current['σr']], name="σr (опън)"))
+        fig_sigma.update_layout(title="Опънно напрежение σr за пласт", yaxis_title="σr [MPa]", yaxis_range=[0, max(10, current['σr']*1.2)])
+        st.plotly_chart(fig_sigma, use_container_width=True)
+
 if st.button("Изчисти всички резултати"):
     st.session_state["results"] = []
     st.session_state["current_result_idx"] = -1
