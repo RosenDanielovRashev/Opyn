@@ -4,6 +4,18 @@ import numpy as np
 import plotly.graph_objects as go
 
 st.set_page_config(layout="centered")
+st.markdown("""
+    <style>
+    div.stButton > button {
+        padding-top: 4px;
+        padding-bottom: 4px;
+        height: 32px;
+        font-size: 14px;
+        border-radius: 4px;
+    }
+    </style>
+""", unsafe_allow_html=True)
+
 st.title("Определяне опънното напрежение в междинен пласт от пътна конструкция")
 
 # --- СЪСТОЯНИЕ ---
