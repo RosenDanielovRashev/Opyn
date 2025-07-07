@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 import plotly.graph_objects as go
 
-st.set_page_config(layout="wide")
+st.set_page_config(layout="centered")
 st.title("Определяне опънното напрежение в междинен пласт от пътна конструкция")
 
 # --- СЪСТОЯНИЕ ---
