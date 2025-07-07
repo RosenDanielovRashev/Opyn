@@ -256,12 +256,13 @@ if layer_idx in st.session_state.layer_results:
 
         st.plotly_chart(fig, use_container_width=True)
 
+        st.image("Допустими опънни напрежения.png", caption="Допустими опънни напрежения", width=800)
         # Проверка дали x_intercept е дефинирана и не е None
         if ('x_intercept' in locals()) and (x_intercept is not None):
             sigma_r = round(x_intercept / 2, 3)
             st.markdown(f"**Изчислено σr = {sigma_r}**")
 
-    st.image("Допустими опънни напрежения.png", caption="Допустими опънни напрежения", width=800)
+
             
             # Запазваме стойността в session_state
             st.session_state.final_sigma = sigma_r
