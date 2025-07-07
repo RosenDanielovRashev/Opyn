@@ -9,17 +9,15 @@ def to_subscript(number):
     subscripts = str.maketrans("0123456789", "₀₁₂₃₄₅₆₇₈₉")
     return str(number).translate(subscripts)
 
-if 'step' not in st.session_state:
-    st.session_state.step = 1
-
 if 'calculation_1' not in st.session_state:
     st.session_state.calculation_1 = None
 if 'calculation_2' not in st.session_state:
     st.session_state.calculation_2 = None
+if 'current_calc' not in st.session_state:
+    st.session_state.current_calc = 1
 
-# Тук слагаме функцията за изчисление (същата, както по-горе; може да я рефакторираме за яснота)
+# Функция за изчисления и визуализация (рефакторирана, за да връща резултати)
 def calculate_and_plot(n, D, h_values, E_values, Ed):
-    # същата логика от предишния код за изчисления и графика
     h_array = np.array(h_values)
     E_array = np.array(E_values)
 
@@ -227,6 +225,7 @@ def calculate_and_plot(n, D, h_values, E_values, Ed):
 
     return results
 
+# Въвеждане на данни (едини път)
 def input_data(calc_num):
     st.markdown(f"## Въвеждане на данни за изчисление {calc_num}")
 
@@ -249,58 +248,53 @@ def input_data(calc_num):
 
     return n, D, h_values, E_values, Ed
 
-# Стъпка 1: Първо изчисление
-if st.session_state.step == 1:
+# Избор кой блок да се показва
+col1, col2 = st.columns(2)
+
+with col1:
+    if st.button("Първо изчисление"):
+        st.session_state.current_calc = 1
+
+with col2:
+    if st.button("Второ изчисление"):
+        st.session_state.current_calc = 2
+
+# Показване на входните данни и бутон за изчисление според избора
+if st.session_state.current_calc == 1:
     n, D, h_values, E_values, Ed = input_data(1)
     if st.button("Изчисли първо изчисление"):
         res = calculate_and_plot(n, D, h_values, E_values, Ed)
         st.session_state.calculation_1 = res
-        st.session_state.step = 2  # преминаваме към стъпка 2
+        st.session_state.current_calc = 1  # да останем тук
 
-    if st.session_state.calculation_1:
-        st.markdown("### Резултати от първото изчисление")
-        res = st.session_state.calculation_1
-        st.write(f"Hₙ₋₁ = {res['H_n_1_r']}")
-        st.write(f"Hₙ = {res['H_n_r']}")
-        st.write(f"Esr = {res['Esr_r']}")
-        st.write(f"Hn/D = {res['ratio_r']}")
-        st.write(f"Ed = {res['Ed_r']}")
-        st.write(f"En = {res['En_r']}")
-        st.write(f"Esr/En = {res['Esr_over_En_r']}")
-        st.write(f"En/Ed = {res['En_over_Ed_r']}")
-        st.plotly_chart(res['fig'])
-        if res['sigma_r'] is not None:
-            st.markdown(f"**σr = {res['sigma_r']}**")
-        else:
-            st.markdown("**σr = -** (Няма изчислена стойност)")
-
-    if st.session_state.calculation_1:
-        if st.button("Напред към второ изчисление"):
-            st.session_state.step = 2
-
-# Стъпка 2: Второ изчисление
-elif st.session_state.step == 2:
+elif st.session_state.current_calc == 2:
     n, D, h_values, E_values, Ed = input_data(2)
     if st.button("Изчисли второ изчисление"):
         res = calculate_and_plot(n, D, h_values, E_values, Ed)
         st.session_state.calculation_2 = res
+        st.session_state.current_calc = 2  # да останем тук
 
-    if st.session_state.calculation_2:
-        st.markdown("### Резултати от второто изчисление")
-        res = st.session_state.calculation_2
-        st.write(f"Hₙ₋₁ = {res['H_n_1_r']}")
-        st.write(f"Hₙ = {res['H_n_r']}")
-        st.write(f"Esr = {res['Esr_r']}")
-        st.write(f"Hn/D = {res['ratio_r']}")
-        st.write(f"Ed = {res['Ed_r']}")
-        st.write(f"En = {res['En_r']}")
-        st.write(f"Esr/En = {res['Esr_over_En_r']}")
-        st.write(f"En/Ed = {res['En_over_Ed_r']}")
-        st.plotly_chart(res['fig'])
-        if res['sigma_r'] is not None:
-            st.markdown(f"**σr = {res['sigma_r']}**")
-        else:
-            st.markdown("**σr = -** (Няма изчислена стойност)")
+# Показване на резултати за текущото изчисление (ако има)
+calc_key = f"calculation_{st.session_state.current_calc}"
+if st.session_state.get(calc_key):
+    res = st.session_state[calc_key]
 
-    if st.button("Обратно към първо изчисление"):
-        st.session_state.step = 1
+    st.markdown(f"### Резултати от изчисление {st.session_state.current_calc}")
+    st.write(f"H{to_subscript(st.session_state[calc_key]['H_n_1_r'])} = {res['H_n_1_r']}")
+    st.write(f"H{to_subscript(st.session_state[calc_key]['H_n_r'])} = {res['H_n_r']}")
+    st.write(f"Esr = {res['Esr_r']}")
+    st.write(f"Hn/D = {res['ratio_r']}")
+    st.write(f"Ed = {res['Ed_r']}")
+    st.write(f"En = {res['En_r']}")
+    st.write(f"Esr/En = {res['Esr_over_En_r']}")
+    st.write(f"En/Ed = {res['En_over_Ed_r']}")
+
+    st.plotly_chart(res['fig'])
+
+    if res['sigma_r'] is not None:
+        st.markdown(f"**σr = {res['sigma_r']}**")
+    else:
+        st.markdown("**σr = -** (Няма изчислена стойност)")
+
+else:
+    st.info("Няма направено изчисление за този раздел.")
