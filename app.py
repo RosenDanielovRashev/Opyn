@@ -252,6 +252,12 @@ if layer_idx in st.session_state.layer_results:
             ),
             showlegend=False
         )
+        # Проверка дали x_intercept е дефинирана и не е None
+        if ('x_intercept' in locals()) and (x_intercept is not None):
+            sigma_r = round(x_intercept / 2, 3)
+            st.markdown(f"**σr = {sigma_r}**")
+        else:
+            st.markdown("**σr = -** (Няма изчислена стойност)")
 
         st.plotly_chart(fig, use_container_width=True)
 
