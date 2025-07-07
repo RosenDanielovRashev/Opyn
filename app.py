@@ -297,7 +297,7 @@ if layer_idx in st.session_state.layer_results:
             st.session_state.manual_sigma_values[f'manual_sigma_{layer_idx}'] = manual_value
             
             # Бутон за проверка
-            if st.button(f"Провери дали изчисленото σr ≤ ръчно отчетеното за пласт {layer_idx+1}"):
+            if st.button(f"Провери дали σR ≤ ръчно въведена стойност за пласт {layer_idx+1}"):
                 check_passed = sigma_r <= manual_value
                 st.session_state.check_results[f'check_{layer_idx}'] = {
                     'passed': check_passed,
