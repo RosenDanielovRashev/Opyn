@@ -250,7 +250,7 @@ if layer_idx in st.session_state.layer_results:
                 title='y',
                 range=[0, 3]
             ),
-            showlegend=True
+            showlegend=False
         )
 
         st.plotly_chart(fig, use_container_width=True)
