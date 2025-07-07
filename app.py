@@ -9,15 +9,15 @@ def to_subscript(number):
     subscripts = str.maketrans("0123456789", "₀₁₂₃₄₅₆₇₈₉")
     return str(number).translate(subscripts)
 
-# Инициализация на session state
+# Initialize session state
 if 'layer_results' not in st.session_state:
     st.session_state.layer_results = {}
 
-# Входни параметри
+# Input parameters
 n = st.number_input("Брой пластове (n)", min_value=2, step=1, value=4)
 D = st.selectbox("Избери D", options=[32.04, 34.0], index=0)
 
-# Въвеждане на данни за всеки пласт
+# Input data for all layers
 st.markdown("### Въведи стойности за всички пластове")
 h_values = []
 E_values = []
@@ -36,16 +36,16 @@ for i in range(n):
         Ed = st.number_input(f"Ed{to_subscript(i+1)}", value=30.0, step=0.1, key=f"Ed_{i}")
         Ed_values.append(Ed)
 
-# Избор на пласт за проверка
+# Layer selection
 st.markdown("### Избери пласт за проверка")
 selected_layer = st.selectbox("Пласт за проверка", options=[f"Пласт {i+1}" for i in range(n)], index=n-1)
 layer_idx = int(selected_layer.split()[-1]) - 1
 
-# Функция за изчисления за конкретен пласт
+# Calculation function
 def calculate_layer(layer_index):
     h_array = np.array(h_values[:layer_index+1])
     E_array = np.array(E_values[:layer_index+1])
-    Ed = Ed_values[layer_index]
+    current_Ed = Ed_values[layer_index]
     
     sum_h_n_1 = h_array[:-1].sum() if layer_index > 0 else 0
     weighted_sum_n_1 = np.sum(E_array[:-1] * h_array[:-1]) if layer_index > 0 else 0
@@ -60,29 +60,29 @@ def calculate_layer(layer_index):
         'Esr_r': round(Esr, 3),
         'ratio_r': round(H_n / D, 3) if D != 0 else 0,
         'En_r': round(E_values[layer_index], 3),
+        'Ed_r': round(current_Ed, 3),  # Store Ed value for this layer
         'Esr_over_En_r': round(Esr / E_values[layer_index], 3) if E_values[layer_index] != 0 else 0,
-        'En_over_Ed_r': round(E_values[layer_index] / Ed, 3) if Ed != 0 else 0,
+        'En_over_Ed_r': round(E_values[layer_index] / current_Ed, 3) if current_Ed != 0 else 0,
         'h_values': h_values.copy(),
         'E_values': E_values.copy(),
-        'Ed': Ed,
         'n_for_calc': layer_index + 1
     }
     
     st.session_state.layer_results[layer_index] = results
     return results
 
-# Бутон за изчисление на текущия пласт
+# Calculate button
 if st.button(f"Изчисли за пласт {layer_idx+1}"):
     results = calculate_layer(layer_idx)
     st.success(f"Изчисленията за пласт {layer_idx+1} са запазени!")
 
-# Показване на резултатите за избрания пласт
+# Display results
 if layer_idx in st.session_state.layer_results:
     results = st.session_state.layer_results[layer_idx]
     
     st.markdown(f"### Резултати за пласт {layer_idx+1}")
     
-    # Показване на формули и изчисления
+    # Display formulas and calculations
     st.latex(r"H_{n-1} = \sum_{i=1}^{n-1} h_i")
     if layer_idx > 0:
         h_terms = " + ".join([f"h_{to_subscript(i+1)}" for i in range(layer_idx)])
@@ -105,111 +105,114 @@ if layer_idx in st.session_state.layer_results:
     st.latex(fr"\frac{{H_n}}{{D}} = \frac{{{results['H_n_r']}}}{{{D}}} = {results['ratio_r']}")
     st.latex(fr"E_{{{layer_idx+1}}} = {results['En_r']}")
     st.latex(fr"\frac{{Esr}}{{E_{{{layer_idx+1}}}}} = {results['Esr_over_En_r']}")
-    st.latex(fr"\frac{{E_{{{layer_idx+1}}}}}{{Ed_{{{layer_idx+1}}}}} = \frac{{{results['En_r']}}}{{{results['Ed']}}} = {results['En_over_Ed_r']}")
+    st.latex(fr"\frac{{E_{{{layer_idx+1}}}}}{{Ed_{{{layer_idx+1}}}}} = \frac{{{results['En_r']}}}{{{results['Ed_r']}}} = {results['En_over_Ed_r']}")
 
-    # Визуализация на графиката
-    df_original = pd.read_csv("danni.csv")
-    df_new = pd.read_csv("Оразмеряване на опън за междиннен плстH_D.csv")
-    df_new.rename(columns={'Esr/Ei': 'sr_Ei'}, inplace=True)
+    # Visualization
+    try:
+        df_original = pd.read_csv("danni.csv")
+        df_new = pd.read_csv("Оразмеряване на опън за междиннен плстH_D.csv")
+        df_new.rename(columns={'Esr/Ei': 'sr_Ei'}, inplace=True)
 
-    fig = go.Figure()
+        fig = go.Figure()
 
-    # Добавяне на изолинии
-    if 'Ei/Ed' in df_original.columns:
-        for level in sorted(df_original['Ei/Ed'].unique()):
-            df_level = df_original[df_original['Ei/Ed'] == level].sort_values(by='H/D')
-            fig.add_trace(go.Scatter(
-                x=df_level['H/D'], y=df_level['y'],
-                mode='lines', name=f'Ei/Ed = {round(level,3)}',
-                line=dict(width=2)
-            ))
-
-    if 'sr_Ei' in df_new.columns:
-        for sr_Ei in sorted(df_new['sr_Ei'].unique()):
-            df_level = df_new[df_new['sr_Ei'] == sr_Ei].sort_values(by='H/D')
-            fig.add_trace(go.Scatter(
-                x=df_level['H/D'], y=df_level['y'],
-                mode='lines', name=f'Esr/Ei = {round(sr_Ei,3)}',
-                line=dict(width=2)
-            ))
-
-    # Интерполация и маркиране на точките
-    if layer_idx > 0:  # Само ако има предишни пластове
-        sr_Ei_values = sorted(df_new['sr_Ei'].unique())
-        target_sr_Ei = results['Esr_over_En_r']
-        target_Hn_D = results['ratio_r']
-
-        if min(sr_Ei_values) <= target_sr_Ei <= max(sr_Ei_values):
-            # Намиране на y координата
-            y_at_ratio = None
-            if target_sr_Ei in sr_Ei_values:
-                df_target = df_new[df_new['sr_Ei'] == target_sr_Ei].sort_values(by='H/D')
-                y_at_ratio = np.interp(target_Hn_D, df_target['H/D'], df_target['y'])
-            else:
-                for i in range(len(sr_Ei_values)-1):
-                    if sr_Ei_values[i] < target_sr_Ei < sr_Ei_values[i+1]:
-                        df_lower = df_new[df_new['sr_Ei'] == sr_Ei_values[i]].sort_values(by='H/D')
-                        df_upper = df_new[df_new['sr_Ei'] == sr_Ei_values[i+1]].sort_values(by='H/D')
-                        
-                        y_lower = np.interp(target_Hn_D, df_lower['H/D'], df_lower['y'])
-                        y_upper = np.interp(target_Hn_D, df_upper['H/D'], df_upper['y'])
-                        
-                        y_at_ratio = y_lower + (y_upper - y_lower) * (target_sr_Ei - sr_Ei_values[i]) / (sr_Ei_values[i+1] - sr_Ei_values[i])
-                        break
-
-            if y_at_ratio is not None:
-                # Добавяне на линии и точки
+        # Add isolines
+        if 'Ei/Ed' in df_original.columns:
+            for level in sorted(df_original['Ei/Ed'].unique()):
+                df_level = df_original[df_original['Ei/Ed'] == level].sort_values(by='H/D')
                 fig.add_trace(go.Scatter(
-                    x=[target_Hn_D, target_Hn_D], y=[0, y_at_ratio],
-                    mode='lines', line=dict(color='blue', dash='dash'),
-                    name='Вертикална линия'
+                    x=df_level['H/D'], y=df_level['y'],
+                    mode='lines', name=f'Ei/Ed = {round(level,3)}',
+                    line=dict(width=2)
                 ))
 
+        if 'sr_Ei' in df_new.columns:
+            for sr_Ei in sorted(df_new['sr_Ei'].unique()):
+                df_level = df_new[df_new['sr_Ei'] == sr_Ei].sort_values(by='H/D')
                 fig.add_trace(go.Scatter(
-                    x=[target_Hn_D], y=[y_at_ratio],
-                    mode='markers', marker=dict(color='red', size=10),
-                    name='Точка на интерполация'
+                    x=df_level['H/D'], y=df_level['y'],
+                    mode='lines', name=f'Esr/Ei = {round(sr_Ei,3)}',
+                    line=dict(width=2)
                 ))
 
-                # Намиране на пресечната точка с Ei/Ed изолинията
-                Ei_Ed_target = results['En_over_Ed_r']
-                if 'Ei/Ed' in df_original.columns:
-                    Ei_Ed_values = sorted(df_original['Ei/Ed'].unique())
-                    if min(Ei_Ed_values) <= Ei_Ed_target <= max(Ei_Ed_values):
-                        x_intercept = None
-                        
-                        if Ei_Ed_target in Ei_Ed_values:
-                            df_level = df_original[df_original['Ei/Ed'] == Ei_Ed_target].sort_values(by='H/D')
-                            x_intercept = np.interp(y_at_ratio, df_level['y'], df_level['H/D'])
-                        else:
-                            for i in range(len(Ei_Ed_values)-1):
-                                if Ei_Ed_values[i] < Ei_Ed_target < Ei_Ed_values[i+1]:
-                                    df_lower = df_original[df_original['Ei/Ed'] == Ei_Ed_values[i]].sort_values(by='H/D')
-                                    df_upper = df_original[df_original['Ei/Ed'] == Ei_Ed_values[i+1]].sort_values(by='H/D')
-                                    
-                                    x_lower = np.interp(y_at_ratio, df_lower['y'], df_lower['H/D'])
-                                    x_upper = np.interp(y_at_ratio, df_upper['y'], df_upper['H/D'])
-                                    
-                                    x_intercept = x_lower + (x_upper - x_lower) * (Ei_Ed_target - Ei_Ed_values[i]) / (Ei_Ed_values[i+1] - Ei_Ed_values[i])
-                                    break
+        # Interpolation and marking points
+        if layer_idx > 0:  # Only if there are previous layers
+            sr_Ei_values = sorted(df_new['sr_Ei'].unique())
+            target_sr_Ei = results['Esr_over_En_r']
+            target_Hn_D = results['ratio_r']
 
-                        if x_intercept is not None:
-                            fig.add_trace(go.Scatter(
-                                x=[x_intercept], y=[y_at_ratio],
-                                mode='markers', marker=dict(color='orange', size=12),
-                                name='Пресечна точка'
-                            ))
+            if min(sr_Ei_values) <= target_sr_Ei <= max(sr_Ei_values):
+                # Find y coordinate
+                y_at_ratio = None
+                if target_sr_Ei in sr_Ei_values:
+                    df_target = df_new[df_new['sr_Ei'] == target_sr_Ei].sort_values(by='H/D')
+                    y_at_ratio = np.interp(target_Hn_D, df_target['H/D'], df_target['y'])
+                else:
+                    for i in range(len(sr_Ei_values)-1):
+                        if sr_Ei_values[i] < target_sr_Ei < sr_Ei_values[i+1]:
+                            df_lower = df_new[df_new['sr_Ei'] == sr_Ei_values[i]].sort_values(by='H/D')
+                            df_upper = df_new[df_new['sr_Ei'] == sr_Ei_values[i+1]].sort_values(by='H/D')
+                            
+                            y_lower = np.interp(target_Hn_D, df_lower['H/D'], df_lower['y'])
+                            y_upper = np.interp(target_Hn_D, df_upper['H/D'], df_upper['y'])
+                            
+                            y_at_ratio = y_lower + (y_upper - y_lower) * (target_sr_Ei - sr_Ei_values[i]) / (sr_Ei_values[i+1] - sr_Ei_values[i])
+                            break
 
-                            # Изчисляване на σr
-                            sigma_r = round(x_intercept / 2, 3)
-                            st.markdown(f"**σr за пласт {layer_idx+1} = {sigma_r}**")
+                if y_at_ratio is not None:
+                    # Add lines and points
+                    fig.add_trace(go.Scatter(
+                        x=[target_Hn_D, target_Hn_D], y=[0, y_at_ratio],
+                        mode='lines', line=dict(color='blue', dash='dash'),
+                        name='Вертикална линия'
+                    ))
 
-    fig.update_layout(
-        title=f"Графика за пласт {layer_idx+1}",
-        xaxis_title="H/D",
-        yaxis_title="y",
-        legend_title="Легенда",
-        height=600
-    )
+                    fig.add_trace(go.Scatter(
+                        x=[target_Hn_D], y=[y_at_ratio],
+                        mode='markers', marker=dict(color='red', size=10),
+                        name='Точка на интерполация'
+                    ))
 
-    st.plotly_chart(fig, use_container_width=True)
+                    # Find intersection point with Ei/Ed isoline
+                    Ei_Ed_target = results['En_over_Ed_r']
+                    if 'Ei/Ed' in df_original.columns:
+                        Ei_Ed_values = sorted(df_original['Ei/Ed'].unique())
+                        if min(Ei_Ed_values) <= Ei_Ed_target <= max(Ei_Ed_values):
+                            x_intercept = None
+                            
+                            if Ei_Ed_target in Ei_Ed_values:
+                                df_level = df_original[df_original['Ei/Ed'] == Ei_Ed_target].sort_values(by='H/D')
+                                x_intercept = np.interp(y_at_ratio, df_level['y'], df_level['H/D'])
+                            else:
+                                for i in range(len(Ei_Ed_values)-1):
+                                    if Ei_Ed_values[i] < Ei_Ed_target < Ei_Ed_values[i+1]:
+                                        df_lower = df_original[df_original['Ei/Ed'] == Ei_Ed_values[i]].sort_values(by='H/D')
+                                        df_upper = df_original[df_original['Ei/Ed'] == Ei_Ed_values[i+1]].sort_values(by='H/D')
+                                        
+                                        x_lower = np.interp(y_at_ratio, df_lower['y'], df_lower['H/D'])
+                                        x_upper = np.interp(y_at_ratio, df_upper['y'], df_upper['H/D'])
+                                        
+                                        x_intercept = x_lower + (x_upper - x_lower) * (Ei_Ed_target - Ei_Ed_values[i]) / (Ei_Ed_values[i+1] - Ei_Ed_values[i])
+                                        break
+
+                            if x_intercept is not None:
+                                fig.add_trace(go.Scatter(
+                                    x=[x_intercept], y=[y_at_ratio],
+                                    mode='markers', marker=dict(color='orange', size=12),
+                                    name='Пресечна точка'
+                                ))
+
+                                # Calculate σr
+                                sigma_r = round(x_intercept / 2, 3)
+                                st.markdown(f"**σr за пласт {layer_idx+1} = {sigma_r}**")
+
+        fig.update_layout(
+            title=f"Графика за пласт {layer_idx+1}",
+            xaxis_title="H/D",
+            yaxis_title="y",
+            legend_title="Легенда",
+            height=600
+        )
+
+        st.plotly_chart(fig, use_container_width=True)
+    except Exception as e:
+        st.error(f"Грешка при зареждане на данните: {str(e)}")
