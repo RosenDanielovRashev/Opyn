@@ -8,7 +8,7 @@ st.markdown("""
     <style>
     div.stButton > button {
         padding: 4px 10px;  /* по-малко отгоре и отдолу, нормално отстрани */
-        height: 30px;       /* по-ниска височина */
+        height: 60px;       /* по-ниска височина */
     }
     </style>
 """, unsafe_allow_html=True)
