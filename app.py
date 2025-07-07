@@ -4,11 +4,15 @@ import numpy as np
 import plotly.graph_objects as go
 
 st.set_page_config(layout="centered")
+# Ограничение на ширината със CSS
 st.markdown("""
     <style>
-    div.stButton > button {
-        padding: 4px 10px;  /* по-малко отгоре и отдолу, нормално отстрани */
-        height: 60px;       /* по-ниска височина */
+    .block-container {
+        max-width: 800px;
+        padding-top: 2rem;
+        padding-right: 2rem;
+        padding-left: 2rem;
+        margin: auto;
     }
     </style>
 """, unsafe_allow_html=True)
