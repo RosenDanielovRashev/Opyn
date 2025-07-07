@@ -9,62 +9,49 @@ def to_subscript(number):
     subscripts = str.maketrans("0123456789", "₀₁₂₃₄₅₆₇₈₉")
     return str(number).translate(subscripts)
 
-# Добавяне на бутон за избор на проверка
-analysis_type = st.radio("Избери тип проверка:", 
-                        ["Проверка за всички пластове", "Проверка за отделни пластове"],
-                        horizontal=True)
-
 # Входни параметри
-n = st.number_input("Брой пластове (n)", min_value=2, step=1, value=4 if analysis_type == "Проверка за отделни пластове" else 3)
+n = st.number_input("Брой пластове (n)", min_value=2, step=1, value=4)
 D = st.selectbox("Избери D", options=[32.04, 34.0], index=0)
 
 # Въвеждане на h_i и E_i за всеки пласт
-st.markdown("### Въведи стойности за всеки пласт")
+st.markdown("### Въведи стойности за всички пластове")
 h_values = []
 E_values = []
 
-if analysis_type == "Проверка за всички пластове":
-    cols = st.columns(2)
-    for i in range(n):
-        with cols[0]:
-            h = st.number_input(f"h{to_subscript(i+1)}", value=4.0, step=0.1, key=f"h_{i}")
-            h_values.append(h)
-        with cols[1]:
-            E = st.number_input(f"E{to_subscript(i+1)}", value=1200.0 if i == 0 else (1000.0 if i == 1 else (800.0 if i == 2 else 400.0)), 
-                              step=0.1, key=f"E_{i}")
-            E_values.append(E)
-else:
-    # Проверка за отделни пластове
-    selected_layer = st.selectbox("Избери пласт за проверка", options=[f"Пласт {i+1}" for i in range(n)], index=0)
-    layer_idx = int(selected_layer.split()[-1]) - 1
-    
-    cols = st.columns(2)
+cols = st.columns(2)
+for i in range(n):
     with cols[0]:
-        h = st.number_input(f"h{to_subscript(layer_idx+1)}", value=4.0, step=0.1, key=f"h_{layer_idx}")
-        h_values = [4.0] * n  # Default values for all layers
-        h_values[layer_idx] = h
+        h = st.number_input(f"h{to_subscript(i+1)}", value=4.0, step=0.1, key=f"h_{i}")
+        h_values.append(h)
     with cols[1]:
-        E = st.number_input(f"E{to_subscript(layer_idx+1)}", 
-                          value=1200.0 if layer_idx == 0 else (1000.0 if layer_idx == 1 else (800.0 if layer_idx == 2 else 400.0)), 
-                          step=0.1, key=f"E_{layer_idx}")
-        E_values = [1200.0, 1000.0, 800.0, 400.0][:n]  # Default values for all layers
-        E_values[layer_idx] = E
+        default_E = [1200.0, 1000.0, 800.0, 400.0][i] if i < 4 else 400.0
+        E = st.number_input(f"E{to_subscript(i+1)}", value=default_E, step=0.1, key=f"E_{i}")
+        E_values.append(E)
 
 Ed = st.number_input("Ed", value=30.0, step=0.1)
 Ed_r = round(Ed, 3)
+
+# Избор на пласт за проверка
+st.markdown("### Избери пласт за проверка")
+selected_layer = st.selectbox("Пласт за проверка", options=[f"Пласт {i+1}" for i in range(n)], index=n-1)
+layer_idx = int(selected_layer.split()[-1]) - 1
 
 # Бутон за изчисления и визуализация
 if st.button("Покажи графиката"):
     h_array = np.array(h_values)
     E_array = np.array(E_values)
 
-    # Изчисляване на Esr за първите n-1 пласта
-    sum_h_n_1 = h_array[:-1].sum()
-    weighted_sum_n_1 = np.sum(E_array[:-1] * h_array[:-1])
+    # Изчисляване само за избрания пласт (последният пласт винаги е избраният)
+    # В този случай, n става layer_idx+1, защото проверяваме до избрания пласт
+    n_for_calc = layer_idx + 1
+    
+    # Изчисляване на Esr за пластовете преди избрания
+    sum_h_n_1 = h_array[:layer_idx].sum()
+    weighted_sum_n_1 = np.sum(E_array[:layer_idx] * h_array[:layer_idx])
     Esr = weighted_sum_n_1 / sum_h_n_1 if sum_h_n_1 != 0 else 0
 
     # Изчисляване на H_n и H_{n-1}
-    H_n = h_array.sum()
+    H_n = h_array[:n_for_calc].sum()
     H_n_1 = sum_h_n_1
 
     # Закръгляне
@@ -75,39 +62,39 @@ if st.button("Покажи графиката"):
     ratio_r = round(ratio, 3)
 
     st.latex(r"H_{n-1} = \sum_{i=1}^{n-1} h_i")
-    h_terms = " + ".join([f"h_{to_subscript(i+1)}" for i in range(n-1)])
+    h_terms = " + ".join([f"h_{to_subscript(i+1)}" for i in range(layer_idx)])
     st.latex(r"H_{n-1} = " + h_terms)
-    st.write(f"H{to_subscript(n-1)} = {H_n_1_r}")
+    st.write(f"H{to_subscript(layer_idx)} = {H_n_1_r}")
 
     st.latex(r"H_n = \sum_{i=1}^n h_i")
-    h_terms_n = " + ".join([f"h_{to_subscript(i+1)}" for i in range(n)])
+    h_terms_n = " + ".join([f"h_{to_subscript(i+1)}" for i in range(n_for_calc)])
     st.latex(r"H_n = " + h_terms_n)
-    st.write(f"H{to_subscript(n)} = {H_n_r}")
+    st.write(f"H{to_subscript(n_for_calc)} = {H_n_r}")
 
     st.latex(r"Esr = \frac{\sum_{i=1}^{n-1} (E_i \cdot h_i)}{\sum_{i=1}^{n-1} h_i}")
 
-    numerator = " + ".join([f"{round(E_values[i],3)} \cdot {round(h_values[i],3)}" for i in range(n-1)])
-    denominator = " + ".join([f"{round(h_values[i],3)}" for i in range(n-1)])
+    numerator = " + ".join([f"{round(E_values[i],3)} \cdot {round(h_values[i],3)}" for i in range(layer_idx)])
+    denominator = " + ".join([f"{round(h_values[i],3)}" for i in range(layer_idx)])
     formula_with_values = rf"Esr = \frac{{{numerator}}}{{{denominator}}} = \frac{{{round(weighted_sum_n_1,3)}}}{{{round(sum_h_n_1,3)}}} = {Esr_r}"
     st.latex(formula_with_values)
 
     ratio_display = rf"\frac{{H_n}}{{D}} = \frac{{{H_n_r}}}{{{round(D,3)}}} = {ratio_r}"
     st.latex(ratio_display)
 
-    En = E_values[-1]
+    En = E_values[layer_idx]
     En_r = round(En, 3)
 
-    st.markdown("### Изчисления с последен пласт")
+    st.markdown(f"### Изчисления с избран пласт {layer_idx+1}")
 
-    st.latex(r"E_{" + str(n) + r"} = " + f"{En_r}")
+    st.latex(r"E_{" + str(n_for_calc) + r"} = " + f"{En_r}")
 
     Esr_over_En = Esr / En if En != 0 else 0
     Esr_over_En_r = round(Esr_over_En, 3)
-    st.latex(r"\frac{Esr}{E_{" + str(n) + r"}} = \frac{" + f"{Esr_r}" + "}{" + f"{En_r}" + "} = " + f"{Esr_over_En_r}")
+    st.latex(r"\frac{Esr}{E_{" + str(n_for_calc) + r"}} = \frac{" + f"{Esr_r}" + "}{" + f"{En_r}" + "} = " + f"{Esr_over_En_r}")
 
     En_over_Ed = En / Ed if Ed != 0 else 0
     En_over_Ed_r = round(En_over_Ed, 3)
-    st.latex(r"\frac{E_{" + str(n) + r"}}{E_d} = \frac{" + f"{En_r}" + "}{" + f"{Ed_r}" + "} = " + f"{En_over_Ed_r}")
+    st.latex(r"\frac{E_{" + str(n_for_calc) + r"}}{E_d} = \frac{" + f"{En_r}" + "}{" + f"{Ed_r}" + "} = " + f"{En_over_Ed_r}")
 
     # Зареждане на данни и построяване на графика
     df_original = pd.read_csv("danni.csv")
@@ -281,7 +268,7 @@ if st.button("Покажи графиката"):
         st.warning("⚠️ Интерполацията не е успешна. Графиката няма да бъде пълна.")
 
     fig.update_layout(
-        title="Графика",
+        title=f"Графика за пласт {layer_idx+1}",
         xaxis_title="H/D",
         yaxis_title="y",
         legend_title="Легенда"
@@ -291,6 +278,6 @@ if st.button("Покажи графиката"):
 
     if 'x_intercept' in locals() and x_intercept is not None:
         sigma_r = round(x_intercept / 2, 3)
-        st.markdown(f"**σr = {sigma_r}**")
+        st.markdown(f"**σr за пласт {layer_idx+1} = {sigma_r}**")
     else:
-        st.markdown("**σr = -** (Няма изчислена стойност)")
+        st.markdown(f"**σr за пласт {layer_idx+1} = -** (Няма изчислена стойност)")
