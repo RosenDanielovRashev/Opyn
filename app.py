@@ -82,7 +82,6 @@ if layer_idx in st.session_state.layer_results:
     
     st.markdown(f"### Резултати за пласт {layer_idx+1}")
     
-    # Display formulas and calculations
     st.latex(r"H_{n-1} = \sum_{i=1}^{n-1} h_i")
     if layer_idx > 0:
         h_terms = " + ".join([f"h_{to_subscript(i+1)}" for i in range(layer_idx)])
@@ -115,7 +114,7 @@ if layer_idx in st.session_state.layer_results:
 
         fig = go.Figure()
 
-        # Add isolines
+        # Add isolines from original df
         if 'Ei/Ed' in df_original.columns:
             for level in sorted(df_original['Ei/Ed'].unique()):
                 df_level = df_original[df_original['Ei/Ed'] == level].sort_values(by='H/D')
@@ -125,6 +124,7 @@ if layer_idx in st.session_state.layer_results:
                     line=dict(width=2)
                 ))
 
+        # Add isolines from new df
         if 'sr_Ei' in df_new.columns:
             for sr_Ei in sorted(df_new['sr_Ei'].unique()):
                 df_level = df_new[df_new['sr_Ei'] == sr_Ei].sort_values(by='H/D')
@@ -158,24 +158,26 @@ if layer_idx in st.session_state.layer_results:
                             break
 
             if y_at_ratio is not None:
+                # Вертикална линия (синя)
                 fig.add_trace(go.Scatter(
                     x=[target_Hn_D, target_Hn_D], y=[0, y_at_ratio],
                     mode='lines', line=dict(color='blue', dash='dash'),
                     name='Вертикална линия'
                 ))
 
+                # Червена точка
                 fig.add_trace(go.Scatter(
                     x=[target_Hn_D], y=[y_at_ratio],
                     mode='markers', marker=dict(color='red', size=10),
                     name='Точка на интерполация'
                 ))
 
+                # Пресечна точка (оранжева)
                 Ei_Ed_target = results['En_over_Ed_r']
                 if 'Ei/Ed' in df_original.columns:
                     Ei_Ed_values = sorted(df_original['Ei/Ed'].unique())
                     if min(Ei_Ed_values) <= Ei_Ed_target <= max(Ei_Ed_values):
                         x_intercept = None
-                        
                         if Ei_Ed_target in Ei_Ed_values:
                             df_level = df_original[df_original['Ei/Ed'] == Ei_Ed_target].sort_values(by='H/D')
                             x_intercept = np.interp(y_at_ratio, df_level['y'], df_level['H/D'])
@@ -198,68 +200,51 @@ if layer_idx in st.session_state.layer_results:
                                 name='Пресечна точка'
                             ))
 
-                            # Добавени линии между точките
+                            # Вертикална линия от оранжева точка до y=2.5
                             fig.add_trace(go.Scatter(
-                                x=[target_Hn_D, x_intercept],
-                                y=[y_at_ratio, y_at_ratio],
-                                mode='lines',
-                                line=dict(color='green', dash='dot'),
-                                name='Линия между червена и оранжева точка'
-                            ))
-
-                            fig.add_trace(go.Scatter(
-                                x=[x_intercept, x_intercept],   # една и съща X, за вертикална линия
-                                y=[y_at_ratio, 2.5],            # от текущото y до 2.5 по y
+                                x=[x_intercept, x_intercept],
+                                y=[y_at_ratio, 2.5],
                                 mode='lines',
                                 line=dict(color='purple', dash='dash'),
-                                name='Линия от оранжева точка до 2.5'
+                                name='Вертикална линия до y=2.5'
                             ))
-# --- Добавяне на невидим trace за втората ос (за да се покаже мащабът)
-fig.add_trace(go.Scatter(
-    x=[0, 1],
-    y=[None, None],  # y не влияе
-    mode='lines',
-    line=dict(color='rgba(0,0,0,0)'),
-    showlegend=False,
-    hoverinfo='skip',
-    xaxis='x2'  # Свързваме с втората ос
-))
 
-fig.update_layout(
-    title='Графика на изолинии',
-    xaxis=dict(
-        title='H/D',
-        showgrid=True,
-        zeroline=False,
-    ),
-    xaxis2=dict(
-        overlaying='x',
-        side='top',
-        range=[fig.layout.xaxis.range[0] if fig.layout.xaxis.range else None, 1],
-        showgrid=False,
-        zeroline=False,
-        tickvals=[0, 0.25, 0.5, 0.75, 1],
-        ticktext=['0', '0.25', '0.5', '0.75', '1'],
-        title='σr'
-    ),
-    yaxis=dict(
-        title='y',
-    ),
-    showlegend=False
-)
-                            sigma_r = round(x_intercept / 2, 3)
-                            st.markdown(f"**σr за пласт {layer_idx+1} = {sigma_r}**")
+        # --- Добавяне на невидим trace за втората ос (за да се покаже мащабът)
+        fig.add_trace(go.Scatter(
+            x=[0, 1],
+            y=[None, None],  # y не влияе
+            mode='lines',
+            line=dict(color='rgba(0,0,0,0)'),
+            showlegend=False,
+            hoverinfo='skip',
+            xaxis='x2'  # Свързваме с втората ос
+        ))
 
-        # Уверяваме се, че оста x обхваща поне 0 до 3 за видимост на линията до 2.5
         fig.update_layout(
-            title=f"Графика за пласт {layer_idx+1}",
-            xaxis_title="H/D",
-            yaxis_title="y",
-            legend_title="Легенда",
-            height=600
+            title='Графика на изолинии',
+            xaxis=dict(
+                title='H/D',
+                showgrid=True,
+                zeroline=False,
+            ),
+            xaxis2=dict(
+                overlaying='x',
+                side='top',
+                range=[fig.layout.xaxis.range[0] if fig.layout.xaxis.range else 0, 1],
+                showgrid=False,
+                zeroline=False,
+                tickvals=[0, 0.25, 0.5, 0.75, 1],
+                ticktext=['0', '0.25', '0.5', '0.75', '1'],
+                title='σr'
+            ),
+            yaxis=dict(
+                title='y',
+                range=[0, 3]
+            ),
+            showlegend=True
         )
-        fig.update_xaxes(range=[0, max(3, 2.5)])
 
         st.plotly_chart(fig, use_container_width=True)
+
     except Exception as e:
-        st.error(f"Грешка при зареждане на данните: {str(e)}")
+        st.error(f"Грешка при визуализацията: {e}")
