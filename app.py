@@ -263,7 +263,7 @@ if layer_idx in st.session_state.layer_results:
             
             # Запазваме стойността в session_state
             st.session_state.final_sigma = sigma_r
-            
+            st.image("Допустими опънни напрежения.png", caption="Допустими опънни напрежения", width=800)
             # Секция за ръчно въвеждане
             st.markdown(
                 """
