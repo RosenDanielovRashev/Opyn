@@ -60,7 +60,7 @@ def calculate_layer(layer_index):
         'Esr_r': round(Esr, 3),
         'ratio_r': round(H_n / D, 3) if D != 0 else 0,
         'En_r': round(E_values[layer_index], 3),
-        'Ed_r': round(current_Ed, 3),  # Store Ed value for this layer
+        'Ed_r': round(current_Ed, 3),
         'Esr_over_En_r': round(Esr / E_values[layer_index], 3) if E_values[layer_index] != 0 else 0,
         'En_over_Ed_r': round(E_values[layer_index] / current_Ed, 3) if current_Ed != 0 else 0,
         'h_values': h_values.copy(),
@@ -135,14 +135,13 @@ if layer_idx in st.session_state.layer_results:
                 ))
 
         # Interpolation and marking points
-        if layer_idx > 0:  # Only if there are previous layers
+        if layer_idx > 0:
             sr_Ei_values = sorted(df_new['sr_Ei'].unique())
             target_sr_Ei = results['Esr_over_En_r']
             target_Hn_D = results['ratio_r']
 
+            y_at_ratio = None
             if min(sr_Ei_values) <= target_sr_Ei <= max(sr_Ei_values):
-                # Find y coordinate
-                y_at_ratio = None
                 if target_sr_Ei in sr_Ei_values:
                     df_target = df_new[df_new['sr_Ei'] == target_sr_Ei].sort_values(by='H/D')
                     y_at_ratio = np.interp(target_Hn_D, df_target['H/D'], df_target['y'])
@@ -158,53 +157,68 @@ if layer_idx in st.session_state.layer_results:
                             y_at_ratio = y_lower + (y_upper - y_lower) * (target_sr_Ei - sr_Ei_values[i]) / (sr_Ei_values[i+1] - sr_Ei_values[i])
                             break
 
-                if y_at_ratio is not None:
-                    # Add lines and points
-                    fig.add_trace(go.Scatter(
-                        x=[target_Hn_D, target_Hn_D], y=[0, y_at_ratio],
-                        mode='lines', line=dict(color='blue', dash='dash'),
-                        name='Вертикална линия'
-                    ))
+            if y_at_ratio is not None:
+                fig.add_trace(go.Scatter(
+                    x=[target_Hn_D, target_Hn_D], y=[0, y_at_ratio],
+                    mode='lines', line=dict(color='blue', dash='dash'),
+                    name='Вертикална линия'
+                ))
 
-                    fig.add_trace(go.Scatter(
-                        x=[target_Hn_D], y=[y_at_ratio],
-                        mode='markers', marker=dict(color='red', size=10),
-                        name='Точка на интерполация'
-                    ))
+                fig.add_trace(go.Scatter(
+                    x=[target_Hn_D], y=[y_at_ratio],
+                    mode='markers', marker=dict(color='red', size=10),
+                    name='Точка на интерполация'
+                ))
 
-                    # Find intersection point with Ei/Ed isoline
-                    Ei_Ed_target = results['En_over_Ed_r']
-                    if 'Ei/Ed' in df_original.columns:
-                        Ei_Ed_values = sorted(df_original['Ei/Ed'].unique())
-                        if min(Ei_Ed_values) <= Ei_Ed_target <= max(Ei_Ed_values):
-                            x_intercept = None
-                            
-                            if Ei_Ed_target in Ei_Ed_values:
-                                df_level = df_original[df_original['Ei/Ed'] == Ei_Ed_target].sort_values(by='H/D')
-                                x_intercept = np.interp(y_at_ratio, df_level['y'], df_level['H/D'])
-                            else:
-                                for i in range(len(Ei_Ed_values)-1):
-                                    if Ei_Ed_values[i] < Ei_Ed_target < Ei_Ed_values[i+1]:
-                                        df_lower = df_original[df_original['Ei/Ed'] == Ei_Ed_values[i]].sort_values(by='H/D')
-                                        df_upper = df_original[df_original['Ei/Ed'] == Ei_Ed_values[i+1]].sort_values(by='H/D')
-                                        
-                                        x_lower = np.interp(y_at_ratio, df_lower['y'], df_lower['H/D'])
-                                        x_upper = np.interp(y_at_ratio, df_upper['y'], df_upper['H/D'])
-                                        
-                                        x_intercept = x_lower + (x_upper - x_lower) * (Ei_Ed_target - Ei_Ed_values[i]) / (Ei_Ed_values[i+1] - Ei_Ed_values[i])
-                                        break
+                Ei_Ed_target = results['En_over_Ed_r']
+                if 'Ei/Ed' in df_original.columns:
+                    Ei_Ed_values = sorted(df_original['Ei/Ed'].unique())
+                    if min(Ei_Ed_values) <= Ei_Ed_target <= max(Ei_Ed_values):
+                        x_intercept = None
+                        
+                        if Ei_Ed_target in Ei_Ed_values:
+                            df_level = df_original[df_original['Ei/Ed'] == Ei_Ed_target].sort_values(by='H/D')
+                            x_intercept = np.interp(y_at_ratio, df_level['y'], df_level['H/D'])
+                        else:
+                            for i in range(len(Ei_Ed_values)-1):
+                                if Ei_Ed_values[i] < Ei_Ed_target < Ei_Ed_values[i+1]:
+                                    df_lower = df_original[df_original['Ei/Ed'] == Ei_Ed_values[i]].sort_values(by='H/D')
+                                    df_upper = df_original[df_original['Ei/Ed'] == Ei_Ed_values[i+1]].sort_values(by='H/D')
+                                    
+                                    x_lower = np.interp(y_at_ratio, df_lower['y'], df_lower['H/D'])
+                                    x_upper = np.interp(y_at_ratio, df_upper['y'], df_upper['H/D'])
+                                    
+                                    x_intercept = x_lower + (x_upper - x_lower) * (Ei_Ed_target - Ei_Ed_values[i]) / (Ei_Ed_values[i+1] - Ei_Ed_values[i])
+                                    break
 
-                            if x_intercept is not None:
-                                fig.add_trace(go.Scatter(
-                                    x=[x_intercept], y=[y_at_ratio],
-                                    mode='markers', marker=dict(color='orange', size=12),
-                                    name='Пресечна точка'
-                                ))
+                        if x_intercept is not None:
+                            fig.add_trace(go.Scatter(
+                                x=[x_intercept], y=[y_at_ratio],
+                                mode='markers', marker=dict(color='orange', size=12),
+                                name='Пресечна точка'
+                            ))
 
-                                # Calculate σr
-                                sigma_r = round(x_intercept / 2, 3)
-                                st.markdown(f"**σr за пласт {layer_idx+1} = {sigma_r}**")
+                            # Добавени линии между точките
+                            fig.add_trace(go.Scatter(
+                                x=[target_Hn_D, x_intercept],
+                                y=[y_at_ratio, y_at_ratio],
+                                mode='lines',
+                                line=dict(color='green', dash='dot'),
+                                name='Линия между червена и оранжева точка'
+                            ))
 
+                            fig.add_trace(go.Scatter(
+                                x=[x_intercept, 2.5],
+                                y=[y_at_ratio, 0],
+                                mode='lines',
+                                line=dict(color='purple', dash='dash'),
+                                name='Линия от оранжева точка до 2.5'
+                            ))
+
+                            sigma_r = round(x_intercept / 2, 3)
+                            st.markdown(f"**σr за пласт {layer_idx+1} = {sigma_r}**")
+
+        # Уверяваме се, че оста x обхваща поне 0 до 3 за видимост на линията до 2.5
         fig.update_layout(
             title=f"Графика за пласт {layer_idx+1}",
             xaxis_title="H/D",
@@ -212,6 +226,7 @@ if layer_idx in st.session_state.layer_results:
             legend_title="Легенда",
             height=600
         )
+        fig.update_xaxes(range=[0, max(3, 2.5)])
 
         st.plotly_chart(fig, use_container_width=True)
     except Exception as e:
