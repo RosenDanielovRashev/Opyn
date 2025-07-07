@@ -3,97 +3,47 @@ import pandas as pd
 import plotly.graph_objects as go
 import numpy as np
 
-st.title("Определяне опънното напрежение в междинен пласт от пътната конструкция фиг.9.3")
+st.title("Определяне опънното напрежение в междиен пласт от пътнатата конструкция фиг.9.3")
 
 def to_subscript(number):
     subscripts = str.maketrans("0123456789", "₀₁₂₃₄₅₆₇₈₉")
     return str(number).translate(subscripts)
 
-# Инициализация на session_state
-if 'current_layer' not in st.session_state:
-    st.session_state.current_layer = 0
-
-if 'n' not in st.session_state:
-    st.session_state.n = 3  # начална стойност на броя пластове
-
-if 'h_values' not in st.session_state:
-    st.session_state.h_values = [4.0] * st.session_state.n
-
-if 'E_values' not in st.session_state:
-    st.session_state.E_values = [1000.0] * st.session_state.n
-
-if 'Ed_values' not in st.session_state:
-    st.session_state.Ed_values = [100.0] * st.session_state.n
-
-# Въвеждане на брой пластове - само при промяна се променят размерите на списъците
-n_input = st.number_input("Брой пластове (n)", min_value=2, max_value=10, step=1, value=st.session_state.n)
-
-if n_input != st.session_state.n:
-    old_n = st.session_state.n
-    st.session_state.n = n_input
-
-    if n_input > old_n:
-        # Добавяме нови стойности с defaults
-        st.session_state.h_values.extend([4.0] * (n_input - old_n))
-        st.session_state.E_values.extend([1000.0] * (n_input - old_n))
-        st.session_state.Ed_values.extend([100.0] * (n_input - old_n))
-    elif n_input < old_n:
-        # Скъсяваме списъците
-        st.session_state.h_values = st.session_state.h_values[:n_input]
-        st.session_state.E_values = st.session_state.E_values[:n_input]
-        st.session_state.Ed_values = st.session_state.Ed_values[:n_input]
-
-    # Ако current_layer е извън новия обхват, коригираме
-    if st.session_state.current_layer >= n_input:
-        st.session_state.current_layer = n_input - 1
-
-n = st.session_state.n
-
-# Избор на D (функционално е същото)
+# Входни параметри
+n = st.number_input("Брой пластове (n)", min_value=2, step=1, value=3)
 D = st.selectbox("Избери D", options=[32.04, 34.0], index=0)
 
-st.write(f"Текущ пласт: {st.session_state.current_layer + 1} от {n}")
+# Въвеждане на h_i и E_i за всеки пласт
+st.markdown("### Въведи стойности за всеки пласт")
+h_values = []
+E_values = []
+cols = st.columns(2)
+for i in range(n):
+    with cols[0]:
+        h = st.number_input(f"h{to_subscript(i+1)}", value=4.0, step=0.1, key=f"h_{i}")
+        h_values.append(h)
+    with cols[1]:
+        E = st.number_input(f"E{to_subscript(i+1)}", value=1000.0, step=0.1, key=f"E_{i}")
+        E_values.append(E)
 
-# Навигационни бутони
-col1, col2 = st.columns(2)
-with col1:
-    if st.button("Назад"):
-        if st.session_state.current_layer > 0:
-            st.session_state.current_layer -= 1
-with col2:
-    if st.button("Напред"):
-        if st.session_state.current_layer < n - 1:
-            st.session_state.current_layer += 1
-
-cur = st.session_state.current_layer
-
-# Въвеждаме h и E за текущия пласт, стойностите се обновяват в сесията
-h = st.number_input(f"h{to_subscript(cur+1)}", value=st.session_state.h_values[cur], step=0.1, key=f"h_{cur}")
-E = st.number_input(f"E{to_subscript(cur+1)}", value=st.session_state.E_values[cur], step=0.1, key=f"E_{cur}")
-
-# Само Ed е променлив за всеки пласт
-Ed = st.number_input(f"Ed за пласт {cur+1}", value=st.session_state.Ed_values[cur], step=0.1, key=f"Ed_{cur}")
-
-# Запазваме стойностите обратно
-st.session_state.h_values[cur] = h
-st.session_state.E_values[cur] = E
-st.session_state.Ed_values[cur] = Ed
-
+Ed = st.number_input("Ed", value=100.0, step=0.1)
 Ed_r = round(Ed, 3)
 
-# Изчисленията се правят само ако натиснем бутон
+# Бутон за изчисления и визуализация
 if st.button("Покажи графиката"):
-    h_array = np.array(st.session_state.h_values)
-    E_array = np.array(st.session_state.E_values)
+    h_array = np.array(h_values)
+    E_array = np.array(E_values)
 
     # Изчисляване на Esr за първите n-1 пласта
     sum_h_n_1 = h_array[:-1].sum()
     weighted_sum_n_1 = np.sum(E_array[:-1] * h_array[:-1])
     Esr = weighted_sum_n_1 / sum_h_n_1 if sum_h_n_1 != 0 else 0
 
+    # Изчисляване на H_n и H_{n-1}
     H_n = h_array.sum()
     H_n_1 = sum_h_n_1
 
+    # Закръгляне
     H_n_1_r = round(H_n_1, 3)
     H_n_r = round(H_n, 3)
     Esr_r = round(Esr, 3)
@@ -112,15 +62,15 @@ if st.button("Покажи графиката"):
 
     st.latex(r"Esr = \frac{\sum_{i=1}^{n-1} (E_i \cdot h_i)}{\sum_{i=1}^{n-1} h_i}")
 
-    numerator = " + ".join([f"{round(st.session_state.E_values[i],3)} \cdot {round(st.session_state.h_values[i],3)}" for i in range(n-1)])
-    denominator = " + ".join([f"{round(st.session_state.h_values[i],3)}" for i in range(n-1)])
+    numerator = " + ".join([f"{round(E_values[i],3)} \cdot {round(h_values[i],3)}" for i in range(n-1)])
+    denominator = " + ".join([f"{round(h_values[i],3)}" for i in range(n-1)])
     formula_with_values = rf"Esr = \frac{{{numerator}}}{{{denominator}}} = \frac{{{round(weighted_sum_n_1,3)}}}{{{round(sum_h_n_1,3)}}} = {Esr_r}"
     st.latex(formula_with_values)
 
     ratio_display = rf"\frac{{H_n}}{{D}} = \frac{{{H_n_r}}}{{{round(D,3)}}} = {ratio_r}"
     st.latex(ratio_display)
 
-    En = st.session_state.E_values[-1]
+    En = E_values[-1]
     En_r = round(En, 3)
 
     st.markdown("### Изчисления с последен пласт")
@@ -166,7 +116,7 @@ if st.button("Покажи графиката"):
                 line=dict(width=2)
             ))
 
-    # Интерполация и останалата част от графиката (както в оригинала)
+    # --- Интерполация на y за Esr/Ei и Hn/D
 
     sr_Ei_values = sorted(df_new['sr_Ei'].unique())
     target_sr_Ei = Esr_over_En_r
@@ -183,6 +133,7 @@ if st.button("Покажи графиката"):
             df_target = df_new[df_new['sr_Ei'] == target_sr_Ei].sort_values(by='H/D')
             y_at_ratio = np.interp(target_Hn_D, df_target['H/D'].values, df_target['y'].values)
         else:
+            # Намерете индекси на съседни стойности
             lower_idx = None
             upper_idx = None
             for i in range(len(sr_Ei_values) - 1):
@@ -207,6 +158,7 @@ if st.button("Покажи графиката"):
                 y_at_ratio = y_lower + t * (y_upper - y_lower)
 
     if not interp_error and y_at_ratio is not None:
+        # Добавяне на вертикална линия на Hn/D
         fig.add_trace(go.Scatter(
             x=[ratio_r, ratio_r],
             y=[0, y_at_ratio],
@@ -215,6 +167,7 @@ if st.button("Покажи графиката"):
             name='Вертикална линия на Hn/D'
         ))
 
+        # Добавяне на червена точка на пресечната точка (интерполирана точка)
         fig.add_trace(go.Scatter(
             x=[ratio_r],
             y=[y_at_ratio],
@@ -223,17 +176,99 @@ if st.button("Покажи графиката"):
             name='Интерполирана точка'
         ))
 
-        st.markdown(f"### Резултат от интерполацията:")
-        st.write(f"При Esr/Ei = {target_sr_Ei} и Hn/D = {ratio_r} получаваме y = {round(y_at_ratio, 3)}")
+        # --- Търсене на пресечна точка с изолинии Ei/Ed (от df_original)
+
+        def interp_x_for_y(df, y_target):
+            x_arr = df['H/D'].values
+            y_arr = df['y'].values
+            for k in range(len(y_arr) - 1):
+                y1, y2 = y_arr[k], y_arr[k + 1]
+                if (y1 - y_target) * (y2 - y_target) <= 0:  # y_target между y1 и y2
+                    x1, x2 = x_arr[k], x_arr[k + 1]
+                    if y2 == y1:
+                        return x1
+                    t_local = (y_target - y1) / (y2 - y1)
+                    x_interp = x1 + t_local * (x2 - x1)
+                    return x_interp
+            return None
+
+        Ei_Ed_target = En_over_Ed_r
+        Ei_Ed_values_sorted = sorted(df_original['Ei/Ed'].unique())
+        lower_index_EiEd = None
+
+        if Ei_Ed_target < Ei_Ed_values_sorted[0] or Ei_Ed_target > Ei_Ed_values_sorted[-1]:
+            st.error(f"❌ Стойността Ei/Ed = {Ei_Ed_target} е извън обхвата на наличните изолинии.")
+        else:
+            for i in range(len(Ei_Ed_values_sorted) - 1):
+                if Ei_Ed_values_sorted[i] <= Ei_Ed_target <= Ei_Ed_values_sorted[i + 1]:
+                    lower_index_EiEd = i
+                    break
+
+            if Ei_Ed_target in Ei_Ed_values_sorted:
+                df_level = df_original[df_original['Ei/Ed'] == Ei_Ed_target].sort_values(by='H/D')
+                x_intercept = interp_x_for_y(df_level, y_at_ratio)
+            elif lower_index_EiEd is not None:
+                low_val = Ei_Ed_values_sorted[lower_index_EiEd]
+                high_val = Ei_Ed_values_sorted[lower_index_EiEd + 1]
+
+                df_low = df_original[df_original['Ei/Ed'] == low_val].sort_values(by='H/D')
+                df_high = df_original[df_original['Ei/Ed'] == high_val].sort_values(by='H/D')
+
+                x_low = interp_x_for_y(df_low, y_at_ratio)
+                x_high = interp_x_for_y(df_high, y_at_ratio)
+
+                if x_low is not None and x_high is not None:
+                    t_EiEd = (Ei_Ed_target - low_val) / (high_val - low_val)
+                    x_intercept = x_low + t_EiEd * (x_high - x_low)
+                else:
+                    x_intercept = None
+            else:
+                x_intercept = None
+
+            if x_intercept is not None:
+                # Оранжева точка вместо звезда
+                fig.add_trace(go.Scatter(
+                    x=[x_intercept],
+                    y=[y_at_ratio],
+                    mode='markers',
+                    marker=dict(color='orange', size=12, symbol='circle'),
+                    name='Пресечна точка с Ei/Ed'
+                ))
+
+                # Линия свързваща оранжевата точка и червената точка (интерполирана точка)
+                fig.add_trace(go.Scatter(
+                    x=[x_intercept, ratio_r],
+                    y=[y_at_ratio, y_at_ratio],
+                    mode='lines',
+                    line=dict(color='orange', width=2, dash='dash'),
+                    showlegend=False
+                ))
+
+                # Вертикална линия от оранжевата точка нагоре до y=2.5
+                fig.add_trace(go.Scatter(
+                    x=[x_intercept, x_intercept],
+                    y=[y_at_ratio, 2.5],
+                    mode='lines',
+                    line=dict(color='orange', width=2, dash='dash'),
+                    showlegend=False
+                ))
+            else:
+                st.warning("⚠️ Не може да се намери пресечна точка с Ei/Ed.")
+
+    else:
+        st.warning("⚠️ Интерполацията не е успешна. Графиката няма да бъде пълна.")
 
     fig.update_layout(
         title="Графика",
         xaxis_title="H/D",
         yaxis_title="y",
-        legend_title="Легенда",
-        width=800,
-        height=600,
-        font=dict(size=14)
+        legend_title="Легенда"
     )
 
     st.plotly_chart(fig)
+
+    if 'x_intercept' in locals() and x_intercept is not None:
+        sigma_r = round(x_intercept / 2, 3)
+        st.markdown(f"**σr = {sigma_r}**")
+    else:
+        st.markdown("**σr = -** (Няма изчислена стойност)")
