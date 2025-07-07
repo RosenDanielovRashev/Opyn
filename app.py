@@ -260,10 +260,12 @@ if layer_idx in st.session_state.layer_results:
         if ('x_intercept' in locals()) and (x_intercept is not None):
             sigma_r = round(x_intercept / 2, 3)
             st.markdown(f"**Изчислено σr = {sigma_r}**")
+
+ st.image("Допустими опънни напрежения.png", caption="Допустими опънни напрежения", width=800)
             
             # Запазваме стойността в session_state
             st.session_state.final_sigma = sigma_r
-            st.image("Допустими опънни напрежения.png", caption="Допустими опънни напрежения", width=800)
+           
             # Секция за ръчно въвеждане
             st.markdown(
                 """
