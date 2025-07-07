@@ -3,13 +3,13 @@ import pandas as pd
 import plotly.graph_objects as go
 import numpy as np
 
-st.title("Определяне опънното напрежение в междиен пласт от пътнатата конструкция фиг.9.3")
+st.title("Определяне опънното напрежение в междинен пласт от пътната конструкция (фиг.9.3)")
 
 def to_subscript(number):
     subscripts = str.maketrans("0123456789", "₀₁₂₃₄₅₆₇₈₉")
     return str(number).translate(subscripts)
 
-# Входни параметри (остават винаги видими)
+# Входни параметри (винаги видими)
 n = st.number_input("Брой пластове (n)", min_value=2, step=1, value=3)
 D = st.selectbox("Избери D", options=[32.04, 34.0], index=0)
 
@@ -27,7 +27,6 @@ for i in range(n):
 
 Ed = st.number_input("Ed", value=100.0, step=0.1)
 
-# Бутон за изчисление
 calculate = st.button("Изчисли")
 
 if calculate:
@@ -39,17 +38,19 @@ if calculate:
     weighted_sum_n_1 = np.sum(E_array[:-1] * h_array[:-1])
     Esr = weighted_sum_n_1 / sum_h_n_1 if sum_h_n_1 != 0 else 0
 
-    # Изчисляване на H_n и H_{n-1}
     H_n = h_array.sum()
     H_n_1 = sum_h_n_1
 
-    # Закръгляне
     H_n_1_r = round(H_n_1, 3)
     H_n_r = round(H_n, 3)
     Esr_r = round(Esr, 3)
     ratio = H_n / D if D != 0 else 0
     ratio_r = round(ratio, 3)
+    Ed_r = round(Ed, 3)
+    En = E_values[-1]
+    En_r = round(En, 3)
 
+    # Показване на формули и резултати
     st.latex(r"H_{n-1} = \sum_{i=1}^{n-1} h_i")
     h_terms = " + ".join([f"h_{to_subscript(i+1)}" for i in range(n-1)])
     st.latex(r"H_{n-1} = " + h_terms)
@@ -61,33 +62,23 @@ if calculate:
     st.write(f"H{to_subscript(n)} = {H_n_r}")
 
     st.latex(r"Esr = \frac{\sum_{i=1}^{n-1} (E_i \cdot h_i)}{\sum_{i=1}^{n-1} h_i}")
-
     numerator = " + ".join([f"{round(E_values[i],3)} \cdot {round(h_values[i],3)}" for i in range(n-1)])
     denominator = " + ".join([f"{round(h_values[i],3)}" for i in range(n-1)])
-    formula_with_values = rf"Esr = \frac{{{numerator}}}{{{denominator}}} = \frac{{{round(weighted_sum_n_1,3)}}}{{{round(sum_h_n_1,3)}}} = {Esr_r}"
-    st.latex(formula_with_values)
+    st.latex(rf"Esr = \frac{{{numerator}}}{{{denominator}}} = \frac{{{round(weighted_sum_n_1,3)}}}{{{round(sum_h_n_1,3)}}} = {Esr_r}")
 
-    ratio_display = rf"\frac{{H_n}}{{D}} = \frac{{{H_n_r}}}{{{round(D,3)}}} = {ratio_r}"
-    st.latex(ratio_display)
-
-    Ed_r = round(Ed, 3)
-
-    En = E_values[-1]
-    En_r = round(En, 3)
+    st.latex(rf"\frac{{H_n}}{{D}} = \frac{{{H_n_r}}}{{{round(D,3)}}} = {ratio_r}")
 
     st.markdown("### Изчисления с последен пласт")
-
-    st.latex(r"E_{" + str(n) + r"} = " + f"{En_r}")
-
+    st.latex(rf"E_{{{n}}} = {En_r}")
     Esr_over_En = Esr / En if En != 0 else 0
     Esr_over_En_r = round(Esr_over_En, 3)
-    st.latex(r"\frac{Esr}{E_{" + str(n) + r"}} = \frac{" + f"{Esr_r}" + "}{" + f"{En_r}" + "} = " + f"{Esr_over_En_r}")
+    st.latex(rf"\frac{{Esr}}{{E_{{{n}}}}} = \frac{{{Esr_r}}}{{{En_r}}} = {Esr_over_En_r}")
 
     En_over_Ed = En / Ed if Ed != 0 else 0
     En_over_Ed_r = round(En_over_Ed, 3)
-    st.latex(r"\frac{E_{" + str(n) + r"}}{E_d} = \frac{" + f"{En_r}" + "}{" + f"{Ed_r}" + "} = " + f"{En_over_Ed_r}")
+    st.latex(rf"\frac{{E_{{{n}}}}}{{E_d}} = \frac{{{En_r}}}{{{Ed_r}}} = {En_over_Ed_r}")
 
-    # Зареждане на данни и построяване на графика
+    # Зареждане на данни и графика
     df_original = pd.read_csv("danni.csv")
     df_new = pd.read_csv("Оразмеряване на опън за междиннен плстH_D.csv")
     df_new.rename(columns={'Esr/Ei': 'sr_Ei'}, inplace=True)
@@ -95,8 +86,7 @@ if calculate:
     fig = go.Figure()
 
     if 'Ei/Ed' in df_original.columns:
-        unique_Ei_Ed = sorted(df_original['Ei/Ed'].unique())
-        for level in unique_Ei_Ed:
+        for level in sorted(df_original['Ei/Ed'].unique()):
             df_level = df_original[df_original['Ei/Ed'] == level].sort_values(by='H/D')
             fig.add_trace(go.Scatter(
                 x=df_level['H/D'],
@@ -107,8 +97,7 @@ if calculate:
             ))
 
     if 'sr_Ei' in df_new.columns:
-        unique_sr_Ei = sorted(df_new['sr_Ei'].unique())
-        for sr_Ei in unique_sr_Ei:
+        for sr_Ei in sorted(df_new['sr_Ei'].unique()):
             df_level = df_new[df_new['sr_Ei'] == sr_Ei].sort_values(by='H/D')
             fig.add_trace(go.Scatter(
                 x=df_level['H/D'],
@@ -118,8 +107,7 @@ if calculate:
                 line=dict(width=2)
             ))
 
-    # --- Интерполация на y за Esr/Ei и Hn/D
-
+    # Интерполация
     sr_Ei_values = sorted(df_new['sr_Ei'].unique())
     target_sr_Ei = Esr_over_En_r
     target_Hn_D = ratio_r
@@ -135,28 +123,18 @@ if calculate:
             df_target = df_new[df_new['sr_Ei'] == target_sr_Ei].sort_values(by='H/D')
             y_at_ratio = np.interp(target_Hn_D, df_target['H/D'].values, df_target['y'].values)
         else:
-            lower_idx = None
-            upper_idx = None
             for i in range(len(sr_Ei_values) - 1):
                 if sr_Ei_values[i] <= target_sr_Ei <= sr_Ei_values[i + 1]:
-                    lower_idx = i
-                    upper_idx = i + 1
+                    lower_idx, upper_idx = i, i + 1
                     break
-            if lower_idx is None or upper_idx is None:
-                st.error(f"❌ Не може да се намери интервал за Esr/Ei = {target_sr_Ei}")
-                interp_error = True
-            else:
-                lower_val = sr_Ei_values[lower_idx]
-                upper_val = sr_Ei_values[upper_idx]
+            df_lower = df_new[df_new['sr_Ei'] == sr_Ei_values[lower_idx]].sort_values(by='H/D')
+            df_upper = df_new[df_new['sr_Ei'] == sr_Ei_values[upper_idx]].sort_values(by='H/D')
 
-                df_lower = df_new[df_new['sr_Ei'] == lower_val].sort_values(by='H/D')
-                df_upper = df_new[df_new['sr_Ei'] == upper_val].sort_values(by='H/D')
+            y_lower = np.interp(target_Hn_D, df_lower['H/D'].values, df_lower['y'].values)
+            y_upper = np.interp(target_Hn_D, df_upper['H/D'].values, df_upper['y'].values)
 
-                y_lower = np.interp(target_Hn_D, df_lower['H/D'].values, df_lower['y'].values)
-                y_upper = np.interp(target_Hn_D, df_upper['H/D'].values, df_upper['y'].values)
-
-                t = (target_sr_Ei - lower_val) / (upper_val - lower_val)
-                y_at_ratio = y_lower + t * (y_upper - y_lower)
+            t = (target_sr_Ei - sr_Ei_values[lower_idx]) / (sr_Ei_values[upper_idx] - sr_Ei_values[lower_idx])
+            y_at_ratio = y_lower + t * (y_upper - y_lower)
 
     if not interp_error and y_at_ratio is not None:
         fig.add_trace(go.Scatter(
@@ -166,7 +144,6 @@ if calculate:
             line=dict(color='blue', dash='dash'),
             name='Вертикална линия на Hn/D'
         ))
-
         fig.add_trace(go.Scatter(
             x=[ratio_r],
             y=[y_at_ratio],
@@ -185,17 +162,16 @@ if calculate:
                     if y2 == y1:
                         return x1
                     t_local = (y_target - y1) / (y2 - y1)
-                    x_interp = x1 + t_local * (x2 - x1)
-                    return x_interp
+                    return x1 + t_local * (x2 - x1)
             return None
 
         Ei_Ed_target = En_over_Ed_r
         Ei_Ed_values_sorted = sorted(df_original['Ei/Ed'].unique())
-        lower_index_EiEd = None
 
         if Ei_Ed_target < Ei_Ed_values_sorted[0] or Ei_Ed_target > Ei_Ed_values_sorted[-1]:
             st.error(f"❌ Стойността Ei/Ed = {Ei_Ed_target} е извън обхвата на наличните изолинии.")
         else:
+            lower_index_EiEd = None
             for i in range(len(Ei_Ed_values_sorted) - 1):
                 if Ei_Ed_values_sorted[i] <= Ei_Ed_target <= Ei_Ed_values_sorted[i + 1]:
                     lower_index_EiEd = i
@@ -205,17 +181,14 @@ if calculate:
                 df_level = df_original[df_original['Ei/Ed'] == Ei_Ed_target].sort_values(by='H/D')
                 x_intercept = interp_x_for_y(df_level, y_at_ratio)
             elif lower_index_EiEd is not None:
-                low_val = Ei_Ed_values_sorted[lower_index_EiEd]
-                high_val = Ei_Ed_values_sorted[lower_index_EiEd + 1]
-
-                df_low = df_original[df_original['Ei/Ed'] == low_val].sort_values(by='H/D')
-                df_high = df_original[df_original['Ei/Ed'] == high_val].sort_values(by='H/D')
+                df_low = df_original[df_original['Ei/Ed'] == Ei_Ed_values_sorted[lower_index_EiEd]].sort_values(by='H/D')
+                df_high = df_original[df_original['Ei/Ed'] == Ei_Ed_values_sorted[lower_index_EiEd + 1]].sort_values(by='H/D')
 
                 x_low = interp_x_for_y(df_low, y_at_ratio)
                 x_high = interp_x_for_y(df_high, y_at_ratio)
 
                 if x_low is not None and x_high is not None:
-                    t_EiEd = (Ei_Ed_target - low_val) / (high_val - low_val)
+                    t_EiEd = (Ei_Ed_target - Ei_Ed_values_sorted[lower_index_EiEd]) / (Ei_Ed_values_sorted[lower_index_EiEd + 1] - Ei_Ed_values_sorted[lower_index_EiEd])
                     x_intercept = x_low + t_EiEd * (x_high - x_low)
                 else:
                     x_intercept = None
@@ -232,7 +205,6 @@ if calculate:
                 ))
                 st.markdown(f"### Пресечна стойност на H/D за Ei/Ed = {Ei_Ed_target}: {round(x_intercept, 3)}")
 
-    # Показване на графиката
     st.plotly_chart(fig, use_container_width=True)
 
 else:
